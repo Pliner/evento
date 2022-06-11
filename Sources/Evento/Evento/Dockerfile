@@ -1,17 +1,13 @@
 ﻿FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
+ENV ASPNETCORE_URLS="http://+:8000"
+EXPOSE 8000
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS publish
 WORKDIR /src
-COPY ["Evento/Evento.csproj", "Evento/"]
-RUN dotnet restore "Evento/Evento.csproj"
+COPY ["./Evento.csproj", "."]
+RUN dotnet restore "Evento.csproj"
 COPY . .
-WORKDIR "/src/Evento"
-RUN dotnet build "Evento.csproj" -c Release -o /app/build
-
-FROM build AS publish
 RUN dotnet publish "Evento.csproj" -c Release -o /app/publish
 
 FROM base AS final
