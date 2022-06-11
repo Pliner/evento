@@ -5,7 +5,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <IsPackable>false</IsPackable>
         <LangVersion>latest</LangVersion>
-        <RootNamespace>Evento.Tests</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

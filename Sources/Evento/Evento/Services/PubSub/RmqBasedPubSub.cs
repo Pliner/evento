@@ -18,7 +18,7 @@ public class RmqBasedPubSub : IEventPubSub
 
     public RmqBasedPubSub(IAdvancedBus bus) => this.bus = bus;
 
-    public async Task PublishAsync(Event @event, CancellationToken cancellationToken)
+    public async Task PublishAsync(Event @event, CancellationToken cancellationToken = default)
     {
         var exchange = await EnsureExchangeDeclaredAsync(ExchangeName, cancellationToken);
         var properties = new MessageProperties

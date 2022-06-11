@@ -8,7 +8,7 @@ public sealed class EventTransport : IEventTransport
 
     public EventTransport(HttpClient httpClient) => this.httpClient = httpClient;
 
-    public async Task TransmitAsync(string destination, Event @event, CancellationToken cancellationToken)
+    public async Task TransmitAsync(string destination, Event @event, CancellationToken cancellationToken = default)
     {
         var parameters = new Dictionary<string, string>
         {

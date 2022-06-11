@@ -6,7 +6,7 @@ public interface ISubscriptionRegistry
 {
     IReadOnlySet<string> Registered { get; }
 
-    Task RegisterAsync(Subscription subscription, CancellationToken cancellationToken);
+    Task RegisterAsync(Subscription subscription, CancellationToken cancellationToken = default);
 
-    Task<bool> UnregisterAsync(string subscriptionId, CancellationToken cancellationToken);
+    Task<bool> UnregisterAsync(string subscriptionId, CancellationToken cancellationToken = default);
 }

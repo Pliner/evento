@@ -1,5 +1,6 @@
 using EasyNetQ;
 using EasyNetQ.ConnectionString;
+using Evento.Infrastructure;
 using Evento.Repositories.Subscription;
 using Evento.Services;
 using Evento.Services.PubSub;
@@ -18,18 +19,19 @@ builder.Services.AddSingleton<ISubscriptionRegistry, SubscriptionRegistry>();
 builder.Services.AddSingleton<IEventPubSub, RmqBasedPubSub>();
 builder.Services.AddHttpClient<EventTransport>();
 builder.Services.AddSingleton(new RmqSettings("rmq", 5672));
+builder.Services.AddSingleton<ActiveSubscriptionsManager>();
 builder.Services.RegisterEasyNetQ(
     c =>
     {
         var settings = c.Resolve<RmqSettings>();
-        var connectionString = $"host={settings.Host};post={settings.Port};publisherConfirms=True";
+        var connectionString = $"host={settings.Host};port={settings.Port};publisherConfirms=True";
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);
     },
     c => c.EnableMicrosoftLogging()
         .EnableNewtonsoftJson()
         .EnableAlwaysNackWithRequeueConsumerErrorStrategy()
 );
-builder.Services.AddHostedService<ActiveSubscriptionsManager>();
+builder.Services.AddPeriodicJob<ActiveSubscriptionsManager>();
 
 var app = builder.Build();
 app.UseSwagger();

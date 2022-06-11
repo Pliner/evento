@@ -3,7 +3,6 @@ using Evento.Internals;
 using Evento.Repositories.Subscription;
 using Evento.Services.PubSub;
 using Evento.Services.Transport;
-using IConsumer = Evento.Services.PubSub.IConsumer;
 
 namespace Evento.Services.SubscriptionRegistry;
 
@@ -24,7 +23,7 @@ public class SubscriptionRegistry : ISubscriptionRegistry
 
     public IReadOnlySet<string> Registered => consumerPerSubscription.Select(x => x.Key).ToHashSet();
 
-    public async Task RegisterAsync(Subscription subscription, CancellationToken cancellationToken)
+    public async Task RegisterAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
         using var _ = await mutex.AcquireAsync(cancellationToken);
 
@@ -38,7 +37,7 @@ public class SubscriptionRegistry : ISubscriptionRegistry
         consumerPerSubscription[subscription.Id] = consumer;
     }
 
-    public async Task<bool> UnregisterAsync(string subscriptionId, CancellationToken cancellationToken)
+    public async Task<bool> UnregisterAsync(string subscriptionId, CancellationToken cancellationToken = default)
     {
         using var _ = await mutex.AcquireAsync(cancellationToken);
 

@@ -8,7 +8,7 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
     private readonly ConcurrentDictionary<string, Subscription> primary = new();
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, string>> nameAndVersionIndex = new();
 
-    public Task InsertAsync(Subscription subscription, CancellationToken cancellationToken)
+    public Task InsertAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
         lock (mutex)
         {
@@ -26,14 +26,14 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.CompletedTask;
     }
 
-    public Task<Subscription[]> SelectActiveAsync(CancellationToken cancellationToken)
+    public Task<Subscription[]> SelectActiveAsync(CancellationToken cancellationToken = default)
     {
         // ReSharper disable once InconsistentlySynchronizedField
         var subscriptions = primary.Select(x => x.Value).Where(x => x.Active).ToArray();
         return Task.FromResult(subscriptions);
     }
 
-    public Task<Subscription?> GetActiveByNameAsync(string name, CancellationToken token)
+    public Task<Subscription?> GetActiveByNameAsync(string name, CancellationToken token = default)
     {
         if (!nameAndVersionIndex.TryGetValue(name, out var versionIndex)) return Task.FromResult<Subscription?>(null);
 
@@ -46,7 +46,7 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.FromResult<Subscription?>(primary[activeId]);
     }
 
-    public Task DeactivateAsync(string id, CancellationToken cancellationToken)
+    public Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
     {
         lock (mutex)
         {

@@ -4,6 +4,5 @@ public readonly record struct Event(
     string Id,
     string Type,
     DateTime Timestamp,
-    ReadOnlyMemory<byte> Payload,
-    int RetryAttempt = 0
+    ReadOnlyMemory<byte> Payload
 );
