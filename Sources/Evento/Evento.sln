@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento", "Evento\Evento.csproj", "{18BF8218-E391-4307-8A68-2627A37A17A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.Tests", "Evento.Tests\Evento.Tests.csproj", "{58D94270-2040-4A66-B7B0-5F34470494C0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.IntegrationTests", "Evento.IntegrationTests\Evento.IntegrationTests.csproj", "{58D94270-2040-4A66-B7B0-5F34470494C0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE1CDF0E-5185-4987-B72C-1D6E4B1924F5}"
 	ProjectSection(SolutionItems) = preProject

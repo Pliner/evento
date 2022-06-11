@@ -7,3 +7,9 @@ services:
     ports:
       - "8000:8000"
     restart: always
+
+  rmq:
+    image: "rabbitmq:3.10-management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"

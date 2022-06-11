@@ -10,16 +10,18 @@ using Microsoft.Extensions.Http;
 
 namespace Evento.Tests;
 
-internal class ApplicationFactory : WebApplicationFactory<Program>
+internal class AppFactory : WebApplicationFactory<Program>
 {
-    private readonly HttpClientInterceptorOptions httpInterceptorOptions = new() { ThrowOnMissingRegistration = true };
+    private readonly RmqSettings rmqSettings;
+    private readonly HttpClientInterceptorOptions httpClientInterceptorOptions = new() { ThrowOnMissingRegistration = true };
     private readonly ConcurrentQueue<Event> events = new();
 
     public IReadOnlyList<Event> ReceivedEvents => events.ToList();
 
-    public ApplicationFactory()
+    public AppFactory(RmqSettings rmqSettings)
     {
-        httpInterceptorOptions.Register(
+        this.rmqSettings = rmqSettings;
+        httpClientInterceptorOptions.Register(
             new[]
             {
                 new HttpRequestInterceptionBuilder()
@@ -44,8 +46,8 @@ internal class ApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureServices(
             s => s.AddSingleton<IHttpMessageHandlerBuilderFilter, InterceptionFilter>(
-                _ => new InterceptionFilter(httpInterceptorOptions)
-            )
+                _ => new InterceptionFilter(httpClientInterceptorOptions)
+            ).AddSingleton(rmqSettings)
         );
         base.ConfigureWebHost(builder);
     }

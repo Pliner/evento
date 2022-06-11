@@ -1,4 +1,4 @@
-namespace Evento.Services;
+namespace Evento.Services.Transport;
 
 public interface IEventTransport
 {

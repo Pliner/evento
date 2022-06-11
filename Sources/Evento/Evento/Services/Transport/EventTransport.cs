@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.WebUtilities;
 
-namespace Evento.Services;
+namespace Evento.Services.Transport;
 
-public sealed class HttpEventTransport : IEventTransport
+public sealed class EventTransport : IEventTransport
 {
     private readonly HttpClient httpClient;
 
-    public HttpEventTransport(HttpClient httpClient) => this.httpClient = httpClient;
+    public EventTransport(HttpClient httpClient) => this.httpClient = httpClient;
 
     public async Task TransmitAsync(string destination, Event @event, CancellationToken cancellationToken)
     {
@@ -14,7 +14,7 @@ public sealed class HttpEventTransport : IEventTransport
         {
             { "id", @event.Id },
             { "type", @event.Type },
-            { "timestamp", @event.Timestamp.ToString("O") },
+            { "timestamp", @event.Timestamp.ToString("O") }
         };
         using var payload = new ReadOnlyMemoryContent(@event.Payload);
         using var response = await httpClient.PostAsync(QueryHelpers.AddQueryString(destination, parameters), payload, cancellationToken);

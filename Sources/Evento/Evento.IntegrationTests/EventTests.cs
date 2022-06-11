@@ -7,17 +7,20 @@ using Xunit;
 
 namespace Evento.Tests;
 
-public class EventTests
+public class EventTests : AppTestBase
 {
+
     [Fact]
     public async Task Should_receive_events()
     {
-        await using var app = new ApplicationFactory();
+        await using var app = CreateApp();
         using var client = app.CreateClient();
 
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "http://hooks/success");
         using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         saveResponse.EnsureSuccessStatusCode();
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         var @event = new Event("id", "type", DateTime.UtcNow, new byte[] { 42 }.AsMemory());
         var parameters = new Dictionary<string, string>
@@ -30,6 +33,8 @@ public class EventTests
             QueryHelpers.AddQueryString("/events", parameters), new ReadOnlyMemoryContent(@event.Payload)
         );
         submitEventResponse.EnsureSuccessStatusCode();
+
+        await Task.Delay(TimeSpan.FromSeconds(5));
 
         app.ReceivedEvents.Should().BeEquivalentTo(
             new[] { @event },

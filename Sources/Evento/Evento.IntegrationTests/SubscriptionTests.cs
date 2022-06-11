@@ -5,17 +5,20 @@ using Xunit;
 
 namespace Evento.Tests;
 
-public class SubscriptionTests
+public class SubscriptionTests : AppTestBase
 {
     [Fact]
     public async Task Should_save_subscription()
     {
-        await using var app = new ApplicationFactory();
+        await using var app = CreateApp();
         using var client = app.CreateClient();
 
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "endpoint");
-        using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
-        saveResponse.EnsureSuccessStatusCode();
+        using var initialSaveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
+        initialSaveResponse.EnsureSuccessStatusCode();
+
+        using var retrySaveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
+        retrySaveResponse.EnsureSuccessStatusCode();
 
         var subscriptions = await client.GetFromJsonAsync<SubscriptionDto[]>("/subscriptions");
 
