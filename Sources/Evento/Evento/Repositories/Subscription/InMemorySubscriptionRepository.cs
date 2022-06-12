@@ -33,17 +33,19 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.FromResult(subscriptions);
     }
 
-    public Task<Subscription?> GetActiveByNameAsync(string name, CancellationToken token = default)
+    public Task<Subscription> GetLastActiveByNameAsync(string name, CancellationToken token = default)
     {
-        if (!nameAndVersionIndex.TryGetValue(name, out var versionIndex)) return Task.FromResult<Subscription?>(null);
+        if (!nameAndVersionIndex.TryGetValue(name, out var versionIndex)) return Task.FromResult<Subscription>(null);
 
-        var activeId = versionIndex.OrderByDescending(x => x.Key)
-            .Select(x => x.Value)
-            .FirstOrDefault();
-        if (activeId == null) return Task.FromResult<Subscription?>(null);
+        foreach (var (_, subscriptionId) in versionIndex.OrderByDescending(x => x.Key))
+        {
+            // ReSharper disable once InconsistentlySynchronizedField
+            var subscription = primary[subscriptionId];
+            if (subscription.Active)
+                return Task.FromResult(subscription);
+        }
 
-        // ReSharper disable once InconsistentlySynchronizedField
-        return Task.FromResult<Subscription?>(primary[activeId]);
+        return Task.FromResult<Subscription>(null);
     }
 
     public Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
@@ -51,7 +53,16 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         lock (mutex)
         {
             if (primary.TryGetValue(id, out var subscription))
-                primary[id] = subscription with { Active = false };
+                primary[id] = new Subscription
+                {
+                    Id = subscription.Id,
+                    Name = subscription.Name,
+                    Version = subscription.Version,
+                    CreatedAt = subscription.CreatedAt,
+                    Types = subscription.Types,
+                    Endpoint = subscription.Endpoint,
+                    Active = false
+                };
         }
 
         return Task.CompletedTask;

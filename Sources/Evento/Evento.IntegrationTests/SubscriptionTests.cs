@@ -3,7 +3,7 @@ using Evento.Controllers;
 using FluentAssertions;
 using Xunit;
 
-namespace Evento.Tests;
+namespace Evento.IntegrationTests;
 
 public class SubscriptionTests : AppTestBase
 {

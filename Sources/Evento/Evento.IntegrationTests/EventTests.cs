@@ -5,11 +5,10 @@ using FluentAssertions;
 using Microsoft.AspNetCore.WebUtilities;
 using Xunit;
 
-namespace Evento.Tests;
+namespace Evento.IntegrationTests;
 
 public class EventTests : AppTestBase
 {
-
     [Fact]
     public async Task Should_receive_events()
     {

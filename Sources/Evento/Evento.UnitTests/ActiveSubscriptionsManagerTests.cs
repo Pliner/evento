@@ -30,8 +30,15 @@ public class ActiveSubscriptionsManagerTests
     [Fact]
     public async Task Should_register_new_subscription_When_it_has_not_been_registered()
     {
-        var subscription = new Subscription("id", "name", 1, DateTime.Today, new[] { "types" }, "endpoint");
-
+        var subscription = new Subscription
+        {
+            Id = "id",
+            Name = "name",
+            Version = 1,
+            CreatedAt = DateTime.Today,
+            Types = new[] { "types" },
+            Endpoint = "endpoint"
+        };
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
             .Returns(new[] { subscription });
@@ -51,7 +58,15 @@ public class ActiveSubscriptionsManagerTests
     [Fact]
     public async Task Should_try_to_register_new_subscription_When_it_has_already_been_registered()
     {
-        var subscription = new Subscription("id", "name", 1, DateTime.Today, new[] { "types" }, "endpoint");
+        var subscription = new Subscription
+        {
+            Id = "id",
+            Name = "name",
+            Version = 1,
+            CreatedAt = DateTime.Today,
+            Types = new[] { "types" },
+            Endpoint = "endpoint"
+        };
 
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
@@ -73,8 +88,26 @@ public class ActiveSubscriptionsManagerTests
     [Fact]
     public async Task Should_unregister_old_subscription_When_new_is_added()
     {
-        var oldSubscription = new Subscription("1", "name", 1, DateTime.Today, new[] { "types" }, "endpoint");
-        var newSubscription = new Subscription("2", "name", 2, DateTime.Today, new[] { "types" }, "endpoint");
+        var oldSubscription = new Subscription
+        {
+            Id = "1",
+            Name = "name",
+            Version = 1,
+            CreatedAt = DateTime.Today,
+            Types = new[] { "types" },
+            Endpoint = "endpoint"
+        };
+        ;
+        var newSubscription = new Subscription
+        {
+            Id = "2",
+            Name = "name",
+            Version = 2,
+            CreatedAt = DateTime.Today,
+            Types = new[] { "types" },
+            Endpoint = "endpoint"
+        };
+        ;
 
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
@@ -96,8 +129,25 @@ public class ActiveSubscriptionsManagerTests
     [Fact]
     public async Task Should_try_unregister_old_subscription_multiple_times_When_new_is_added()
     {
-        var oldSubscription = new Subscription("1", "name", 1, DateTime.Today, new[] { "types" }, "endpoint");
-        var newSubscription = new Subscription("2", "name", 2, DateTime.Today, new[] { "types" }, "endpoint");
+        var oldSubscription = new Subscription
+        {
+            Id = "1",
+            Name = "name",
+            Version = 1,
+            CreatedAt = DateTime.Today,
+            Types = new[] { "types" },
+            Endpoint = "endpoint"
+        };
+        ;
+        var newSubscription = new Subscription
+        {
+            Id = "2",
+            Name = "name",
+            Version = 2,
+            CreatedAt = DateTime.Today,
+            Types = new[] { "types" },
+            Endpoint = "endpoint"
+        };
 
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())

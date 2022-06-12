@@ -5,22 +5,25 @@ using JustEat.HttpClientInterception;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
 
-namespace Evento.Tests;
+namespace Evento.IntegrationTests;
 
 internal class AppFactory : WebApplicationFactory<Program>
 {
-    private readonly RmqSettings rmqSettings;
+    private readonly string rmqHost;
+    private readonly int rmqPort;
     private readonly HttpClientInterceptorOptions httpClientInterceptorOptions = new() { ThrowOnMissingRegistration = true };
     private readonly ConcurrentQueue<Event> events = new();
 
     public IReadOnlyList<Event> ReceivedEvents => events.ToList();
 
-    public AppFactory(RmqSettings rmqSettings)
+    public AppFactory(string rmqHost, int rmqPort)
     {
-        this.rmqSettings = rmqSettings;
+        this.rmqHost = rmqHost;
+        this.rmqPort = rmqPort;
         httpClientInterceptorOptions.Register(
             new[]
             {
@@ -45,10 +48,15 @@ internal class AppFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(
-            s => s.AddSingleton<IHttpMessageHandlerBuilderFilter, InterceptionFilter>(
-                _ => new InterceptionFilter(httpClientInterceptorOptions)
-            ).AddSingleton(rmqSettings)
-        );
+                s => s.AddSingleton<IHttpMessageHandlerBuilderFilter, InterceptionFilter>(
+                    _ => new InterceptionFilter(httpClientInterceptorOptions)
+                )
+            )
+            .ConfigureAppConfiguration(
+                x => x.AddInMemoryCollection(
+                    new Dictionary<string, string> { { "RMQ_HOSTS", $"{rmqHost}:{rmqPort}" } }
+                )
+            );
         base.ConfigureWebHost(builder);
     }
 

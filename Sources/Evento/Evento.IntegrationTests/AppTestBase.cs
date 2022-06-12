@@ -4,7 +4,7 @@ using DotNet.Testcontainers.Containers.Modules.Abstractions;
 using DotNet.Testcontainers.Containers.Modules.MessageBrokers;
 using Xunit;
 
-namespace Evento.Tests;
+namespace Evento.IntegrationTests;
 
 public class AppTestBase : IAsyncLifetime
 {
@@ -18,7 +18,7 @@ public class AppTestBase : IAsyncLifetime
         )
         .Build();
 
-    internal AppFactory CreateApp() => new(new RmqSettings(rmqContainer.Hostname, rmqContainer.Port));
+    internal AppFactory CreateApp() => new(rmqContainer.Hostname, rmqContainer.Port);
 
     public Task InitializeAsync()
     {

@@ -9,6 +9,7 @@ using Evento.Services.Transport;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
@@ -18,13 +19,19 @@ builder.Services.AddSingleton<IEventTransport, EventTransport>();
 builder.Services.AddSingleton<ISubscriptionRegistry, SubscriptionRegistry>();
 builder.Services.AddSingleton<IEventPubSub, RmqBasedPubSub>();
 builder.Services.AddHttpClient<EventTransport>();
-builder.Services.AddSingleton(new RmqSettings("rmq", 5672));
-builder.Services.AddSingleton<ActiveSubscriptionsManager>();
 builder.Services.RegisterEasyNetQ(
     c =>
     {
-        var settings = c.Resolve<RmqSettings>();
-        var connectionString = $"host={settings.Host};port={settings.Port};publisherConfirms=True";
+        var configuration = c.Resolve<IConfiguration>();
+        var parameters = new Dictionary<string, string>
+        {
+            { "host", configuration["RMQ_HOSTS"] ?? "localhost" },
+            { "username", configuration["RMQ_USER"] ?? "guest" },
+            { "password", configuration["RMQ_PASSWORD"] ?? "guest" },
+            { "virtualHost", configuration["RMQ_VHOST"] ?? "/" },
+            { "publisherConfirms", "True" }
+        };
+        var connectionString = string.Join(";", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);
     },
     c => c.EnableMicrosoftLogging()
@@ -45,6 +52,5 @@ app.UseSwaggerUI(options =>
         options.RoutePrefix = string.Empty;
     }
 );
-app.Run();
 
-public record RmqSettings(string Host, int Port);
+app.Run();

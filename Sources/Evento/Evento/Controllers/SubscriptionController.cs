@@ -14,22 +14,25 @@ public class SubscriptionsController : ControllerBase
     [HttpPost]
     public async Task SaveAsync([FromBody] NewSubscriptionDto subscription, CancellationToken cancellationToken)
     {
-        var activeSubscription = await subscriptionRepository.GetActiveByNameAsync(subscription.Name, cancellationToken);
+        var activeSubscription = await subscriptionRepository.GetLastActiveByNameAsync(subscription.Name, cancellationToken);
 
         if (
-            activeSubscription.HasValue && activeSubscription.Value.Endpoint == subscription.Endpoint
-            && activeSubscription.Value.Types.SequenceEqual(subscription.Types)
+            activeSubscription != null
+            && activeSubscription.Endpoint == subscription.Endpoint
+            && activeSubscription.Types.SequenceEqual(subscription.Types)
         )
             return;
 
-        var newSubscription = new Subscription(
-            Guid.NewGuid().ToString(),
-            subscription.Name,
-            (activeSubscription?.Version ?? 0) + 1,
-            DateTime.UtcNow,
-            subscription.Types,
-            subscription.Endpoint
-        );
+        var newSubscription = new Subscription
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = subscription.Name,
+            Version = (activeSubscription?.Version ?? 0) + 1,
+            CreatedAt = DateTime.UtcNow,
+            Types = subscription.Types,
+            Endpoint = subscription.Endpoint,
+            Active = true
+        };
         await subscriptionRepository.InsertAsync(newSubscription, cancellationToken);
     }
 
