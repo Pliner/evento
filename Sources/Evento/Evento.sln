@@ -7,6 +7,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE1CDF0E-5185-4987-B72C-1D6E4B1924F5}"
 	ProjectSection(SolutionItems) = preProject
 		docker-compose.yml = docker-compose.yml
+		Makefile = Makefile
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.UnitTests", "Evento.UnitTests\Evento.UnitTests.csproj", "{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}"

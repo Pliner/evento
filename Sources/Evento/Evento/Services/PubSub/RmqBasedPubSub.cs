@@ -23,9 +23,7 @@ public class RmqBasedPubSub : IEventPubSub
         var exchange = await EnsureExchangeDeclaredAsync(ExchangeName, cancellationToken);
         var properties = new MessageProperties
         {
-            MessageId = @event.Id,
             Type = @event.Type,
-            Timestamp = @event.Timestamp.Ticks,
             ContentType = "application/octet-stream",
             DeliveryMode = MessageDeliveryMode.Persistent
         };
@@ -64,7 +62,7 @@ public class RmqBasedPubSub : IEventPubSub
             queue,
             async (b, p, _, c) =>
             {
-                var @event = new Event(p.MessageId, p.Type, new DateTime(p.Timestamp, DateTimeKind.Utc), b);
+                var @event = new Event(p.Type, b);
                 await handler(subscription, @event, c);
                 return AckStrategies.Ack;
             },

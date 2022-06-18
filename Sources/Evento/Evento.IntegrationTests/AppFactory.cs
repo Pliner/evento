@@ -15,15 +15,19 @@ internal class AppFactory : WebApplicationFactory<Program>
 {
     private readonly string rmqHost;
     private readonly int rmqPort;
+    private readonly string pgHost;
+    private readonly int pgPort;
     private readonly HttpClientInterceptorOptions httpClientInterceptorOptions = new() { ThrowOnMissingRegistration = true };
     private readonly ConcurrentQueue<Event> events = new();
 
     public IReadOnlyList<Event> ReceivedEvents => events.ToList();
 
-    public AppFactory(string rmqHost, int rmqPort)
+    public AppFactory(string rmqHost, int rmqPort, string pgHost, int pgPort)
     {
         this.rmqHost = rmqHost;
         this.rmqPort = rmqPort;
+        this.pgHost = pgHost;
+        this.pgPort = pgPort;
         httpClientInterceptorOptions.Register(
             new[]
             {
@@ -34,11 +38,9 @@ internal class AppFactory : WebApplicationFactory<Program>
                         async (m, c) =>
                         {
                             var query = QueryHelpers.ParseQuery(m.RequestUri?.Query);
-                            var id = query["id"].Single();
                             var type = query["type"].Single();
-                            var timestamp = DateTime.Parse(query["timestamp"].Single(), DateTimeFormatInfo.InvariantInfo, DateTimeStyles.RoundtripKind);
                             var payload = await (m.Content ?? new ByteArrayContent(Array.Empty<byte>())).ReadAsByteArrayAsync(c);
-                            var @event = new Event(id, type, timestamp, payload.AsMemory());
+                            var @event = new Event(type, payload.AsMemory());
                             events.Enqueue(@event);
                         }
                     )
@@ -54,10 +56,17 @@ internal class AppFactory : WebApplicationFactory<Program>
             )
             .ConfigureAppConfiguration(
                 x => x.AddInMemoryCollection(
-                    new Dictionary<string, string> { { "RMQ_HOSTS", $"{rmqHost}:{rmqPort}" } }
+                    new Dictionary<string, string>
+                    {
+                        { "RMQ_HOSTS", $"{rmqHost}:{rmqPort}" },
+                        { "POSTGRES_HOST", pgHost },
+                        { "POSTGRES_PORT", pgPort.ToString() },
+                    }
                 )
             );
         base.ConfigureWebHost(builder);
+
+
     }
 
     private sealed class InterceptionFilter : IHttpMessageHandlerBuilderFilter

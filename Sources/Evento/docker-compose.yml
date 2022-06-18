@@ -7,9 +7,25 @@ services:
     ports:
       - "8000:8000"
     restart: always
+    depends_on:
+      pg:
+        condition: service_healthy
 
   rmq:
     image: "rabbitmq:3.10-management"
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  pg:
+    environment:
+      - POSTGRES_DBNAME=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    image: "postgres:14"
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

@@ -1,5 +1,6 @@
 using EasyNetQ;
 using EasyNetQ.ConnectionString;
+using Evento.Db;
 using Evento.Infrastructure;
 using Evento.Repositories.Subscription;
 using Evento.Services;
@@ -14,7 +15,7 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging(c => c.AddConsole());
-builder.Services.AddSingleton<ISubscriptionRepository, InMemorySubscriptionRepository>();
+builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>();
 builder.Services.AddSingleton<IEventTransport, EventTransport>();
 builder.Services.AddSingleton<ISubscriptionRegistry, SubscriptionRegistry>();
 builder.Services.AddSingleton<IEventPubSub, RmqBasedPubSub>();
@@ -25,7 +26,7 @@ builder.Services.RegisterEasyNetQ(
         var configuration = c.Resolve<IConfiguration>();
         var parameters = new Dictionary<string, string>
         {
-            { "host", configuration["RMQ_HOSTS"] ?? "localhost" },
+            { "host", configuration["RMQ_HOSTS"] ?? "rmq" },
             { "username", configuration["RMQ_USER"] ?? "guest" },
             { "password", configuration["RMQ_PASSWORD"] ?? "guest" },
             { "virtualHost", configuration["RMQ_VHOST"] ?? "/" },
@@ -39,6 +40,9 @@ builder.Services.RegisterEasyNetQ(
         .EnableAlwaysNackWithRequeueConsumerErrorStrategy()
 );
 builder.Services.AddPeriodicJob<ActiveSubscriptionsManager>();
+builder.Services.AddDbContextFactory<EventoDbContext>(
+    (s, o) => o.SetupPostgresql(s.GetRequiredService<IConfiguration>())
+);
 
 var app = builder.Build();
 app.UseSwagger();
@@ -52,5 +56,4 @@ app.UseSwaggerUI(options =>
         options.RoutePrefix = string.Empty;
     }
 );
-
-app.Run();
+await app.RunAsync();

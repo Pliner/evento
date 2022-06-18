@@ -1,17 +1,16 @@
 namespace Evento.Infrastructure;
 
-public class PeriodicBackgroundService<TPeriodicService> : BackgroundService where TPeriodicService : IPeriodicJob
+public class PeriodicBackgroundService<TJob> : BackgroundService where TJob : IPeriodicJob
 {
-    private readonly ILogger<PeriodicBackgroundService<TPeriodicService>> logger;
-    private readonly TPeriodicService periodicJob;
+    private readonly ILogger<PeriodicBackgroundService<TJob>> logger;
+    private readonly TJob job;
 
     public PeriodicBackgroundService(
-        ILogger<PeriodicBackgroundService<TPeriodicService>> logger,
-        TPeriodicService periodicJob
+        ILogger<PeriodicBackgroundService<TJob>> logger, TJob job
     )
     {
         this.logger = logger;
-        this.periodicJob = periodicJob;
+        this.job = job;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -20,7 +19,7 @@ public class PeriodicBackgroundService<TPeriodicService> : BackgroundService whe
         {
             try
             {
-                await periodicJob.ExecuteAsync(stoppingToken);
+                await job.ExecuteAsync(stoppingToken);
             }
             catch (OperationCanceledException)
             {
@@ -28,10 +27,10 @@ public class PeriodicBackgroundService<TPeriodicService> : BackgroundService whe
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Failed to execute periodic job {PeriodicJobName}", periodicJob.Name);
+                logger.LogError(exception, "Failed to execute periodic job {JobName}", job.Name);
             }
 
-            await Task.Delay(periodicJob.Interval, stoppingToken);
+            await Task.Delay(job.Interval, stoppingToken);
         }
     }
 }

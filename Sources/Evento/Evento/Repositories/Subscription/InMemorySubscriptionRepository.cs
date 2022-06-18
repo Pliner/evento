@@ -26,45 +26,31 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return Task.CompletedTask;
     }
 
-    public Task<Subscription[]> SelectActiveAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Subscription>> SelectActiveAsync(CancellationToken cancellationToken = default)
     {
         // ReSharper disable once InconsistentlySynchronizedField
-        var subscriptions = primary.Select(x => x.Value).Where(x => x.Active).ToArray();
-        return Task.FromResult(subscriptions);
+        return primary.Select(x => x.Value).Where(x => x.Active).ToList();
     }
 
-    public Task<Subscription> GetLastActiveByNameAsync(string name, CancellationToken token = default)
+    public async Task<Subscription?> GetLastVersionByNameAsync(string name, CancellationToken token = default)
     {
-        if (!nameAndVersionIndex.TryGetValue(name, out var versionIndex)) return Task.FromResult<Subscription>(null);
+        if (!nameAndVersionIndex.TryGetValue(name, out var versionIndex)) return null;
 
         foreach (var (_, subscriptionId) in versionIndex.OrderByDescending(x => x.Key))
         {
             // ReSharper disable once InconsistentlySynchronizedField
-            var subscription = primary[subscriptionId];
-            if (subscription.Active)
-                return Task.FromResult(subscription);
+            return primary[subscriptionId];
         }
 
-        return Task.FromResult<Subscription>(null);
+        return null;
     }
 
-    public Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
+    public async Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
     {
         lock (mutex)
         {
             if (primary.TryGetValue(id, out var subscription))
-                primary[id] = new Subscription
-                {
-                    Id = subscription.Id,
-                    Name = subscription.Name,
-                    Version = subscription.Version,
-                    CreatedAt = subscription.CreatedAt,
-                    Types = subscription.Types,
-                    Endpoint = subscription.Endpoint,
-                    Active = false
-                };
+                primary[id] = subscription with { Active = false };
         }
-
-        return Task.CompletedTask;
     }
 }

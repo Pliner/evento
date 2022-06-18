@@ -1,8 +1,11 @@
 using System.Net.Http.Json;
 using Evento.Controllers;
+using Evento.Db;
 using Evento.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Evento.IntegrationTests;
@@ -15,18 +18,20 @@ public class EventTests : AppTestBase
         await using var app = CreateApp();
         using var client = app.CreateClient();
 
+        var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<EventoDbContext>>();
+        await using (var dbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None))
+            await dbContext.Database.MigrateAsync();
+
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "http://hooks/success");
         using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         saveResponse.EnsureSuccessStatusCode();
 
         await Task.Delay(TimeSpan.FromSeconds(5));
 
-        var @event = new Event("id", "type", DateTime.UtcNow, new byte[] { 42 }.AsMemory());
+        var @event = new Event("type", new byte[] { 42 }.AsMemory());
         var parameters = new Dictionary<string, string>
         {
-            { "id", @event.Id },
-            { "type", @event.Type },
-            { "timestamp", @event.Timestamp.ToString("O") },
+            { "type", @event.Type }
         };
         var submitEventResponse = await client.PostAsync(
             QueryHelpers.AddQueryString("/events", parameters), new ReadOnlyMemoryContent(@event.Payload)

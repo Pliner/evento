@@ -1,6 +1,8 @@
 using DotNet.Testcontainers.Containers.Builders;
+using DotNet.Testcontainers.Containers.Configurations.Databases;
 using DotNet.Testcontainers.Containers.Configurations.MessageBrokers;
 using DotNet.Testcontainers.Containers.Modules.Abstractions;
+using DotNet.Testcontainers.Containers.Modules.Databases;
 using DotNet.Testcontainers.Containers.Modules.MessageBrokers;
 using Xunit;
 
@@ -18,15 +20,33 @@ public class AppTestBase : IAsyncLifetime
         )
         .Build();
 
-    internal AppFactory CreateApp() => new(rmqContainer.Hostname, rmqContainer.Port);
+    private readonly TestcontainerDatabase pgContainer = new TestcontainersBuilder<PostgreSqlTestcontainer>()
+        .WithDatabase(
+            new PostgreSqlTestcontainerConfiguration("postgres:14")
+            {
+                Database = "postgres",
+                Username = "postgres",
+                Password = "some_secret",
+            }
+        )
+        .Build();
 
-    public Task InitializeAsync()
+    internal AppFactory CreateApp() => new(
+        rmqContainer.Hostname,
+        rmqContainer.Port,
+        pgContainer.Hostname,
+        pgContainer.Port
+    );
+
+    public async Task InitializeAsync()
     {
-        return rmqContainer.StartAsync();
+        await rmqContainer.StartAsync();
+        await pgContainer.StartAsync();
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        return rmqContainer.StopAsync();
+        await rmqContainer.StopAsync();
+        await pgContainer.StopAsync();
     }
 }
