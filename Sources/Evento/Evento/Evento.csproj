@@ -10,10 +10,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="EasyNetQ" Version="7.0.0-rc2" />
-      <PackageReference Include="EasyNetQ.DI.Microsoft" Version="7.0.0-rc2" />
-      <PackageReference Include="EasyNetQ.Logging.Microsoft" Version="7.0.0-rc2" />
-      <PackageReference Include="EasyNetQ.Serialization.NewtonsoftJson" Version="7.0.0-rc2" />
+      <PackageReference Include="EasyNetQ" Version="7.0.0-rc5" />
+      <PackageReference Include="EasyNetQ.DI.Microsoft" Version="7.0.0-rc5" />
+      <PackageReference Include="EasyNetQ.Logging.Microsoft" Version="7.0.0-rc5" />
+      <PackageReference Include="EasyNetQ.Serialization.NewtonsoftJson" Version="7.0.0-rc5" />
       <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.6" />
       <PackageReference Include="EFCore.NamingConventions" Version="6.0.0" />
       <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.4" />
