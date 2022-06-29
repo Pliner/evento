@@ -9,6 +9,6 @@ public interface IPublishSubscribeTransport : IDisposable
     IReadOnlySet<Guid> ActiveSubscriptions { get; }
 
     Task SubscribeAsync(Subscription subscription, CancellationToken cancellationToken = default);
-    
+
     Task<bool> UnsubscribeAsync(Guid subscriptionId, CancellationToken cancellationToken = default);
 }

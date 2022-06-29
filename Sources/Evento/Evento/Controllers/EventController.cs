@@ -19,7 +19,7 @@ public class EventController : ControllerBase
     {
         await using var stream = new ArrayPooledMemoryStream();
         await Request.Body.CopyToAsync(stream, cancellationToken);
- 
+
         var @event = new Event(type, stream.Memory);
         await pubSub.PublishAsync(@event, cancellationToken);
     }
