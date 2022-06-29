@@ -10,7 +10,6 @@ using Evento.Services.Transport;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
-using Polly.Timeout;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
