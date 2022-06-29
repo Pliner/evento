@@ -5,8 +5,8 @@ namespace Evento.Repositories.Subscription;
 public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
 {
     private readonly object mutex = new();
-    private readonly ConcurrentDictionary<string, Subscription> primary = new();
-    private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, string>> nameAndVersionIndex = new();
+    private readonly ConcurrentDictionary<Guid, Subscription> primary = new();
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<int, Guid>> nameAndVersionIndex = new();
 
     public Task InsertAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
@@ -45,7 +45,7 @@ public sealed class InMemorySubscriptionRepository : ISubscriptionRepository
         return null;
     }
 
-    public async Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
+    public async Task DeactivateAsync(Guid id, CancellationToken cancellationToken = default)
     {
         lock (mutex)
         {

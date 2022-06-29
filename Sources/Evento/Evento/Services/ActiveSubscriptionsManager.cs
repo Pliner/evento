@@ -24,7 +24,7 @@ public class ActiveSubscriptionsManager : IPeriodicJob
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         var activeSubscriptions = await subscriptionRepository.SelectActiveAsync(cancellationToken);
-        var staleSubscriptionsIds = new HashSet<string>(subscriptionRegistry.Registered);
+        var staleSubscriptionsIds = subscriptionRegistry.Registered.ToHashSet();
 
         foreach (var activeSubscription in activeSubscriptions)
         {

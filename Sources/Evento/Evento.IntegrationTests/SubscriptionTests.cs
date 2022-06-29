@@ -20,7 +20,6 @@ public class SubscriptionTests : AppTestBase
         await using (var dbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None))
             await dbContext.Database.MigrateAsync();
 
-
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "endpoint");
         using var initialSaveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         initialSaveResponse.EnsureSuccessStatusCode();

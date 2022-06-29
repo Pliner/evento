@@ -4,9 +4,9 @@ namespace Evento.Services.SubscriptionRegistry;
 
 public interface ISubscriptionRegistry
 {
-    IReadOnlySet<string> Registered { get; }
+    IReadOnlySet<Guid> Registered { get; }
 
     Task RegisterAsync(Subscription subscription, CancellationToken cancellationToken = default);
 
-    Task<bool> UnregisterAsync(string subscriptionId, CancellationToken cancellationToken = default);
+    Task<bool> UnregisterAsync(Guid subscriptionId, CancellationToken cancellationToken = default);
 }

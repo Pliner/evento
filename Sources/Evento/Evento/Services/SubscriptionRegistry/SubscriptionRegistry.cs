@@ -8,7 +8,7 @@ namespace Evento.Services.SubscriptionRegistry;
 
 public class SubscriptionRegistry : ISubscriptionRegistry
 {
-    private readonly ConcurrentDictionary<string, IConsumer> consumerPerSubscription = new();
+    private readonly ConcurrentDictionary<Guid, IConsumer> consumerPerSubscription = new();
 
     private readonly AsyncLock mutex = new();
 
@@ -21,7 +21,7 @@ public class SubscriptionRegistry : ISubscriptionRegistry
         this.eventTransport = eventTransport;
     }
 
-    public IReadOnlySet<string> Registered => consumerPerSubscription.Select(x => x.Key).ToHashSet();
+    public IReadOnlySet<Guid> Registered => consumerPerSubscription.Select(x => x.Key).ToHashSet();
 
     public async Task RegisterAsync(Subscription subscription, CancellationToken cancellationToken = default)
     {
@@ -37,7 +37,7 @@ public class SubscriptionRegistry : ISubscriptionRegistry
         consumerPerSubscription[subscription.Id] = consumer;
     }
 
-    public async Task<bool> UnregisterAsync(string subscriptionId, CancellationToken cancellationToken = default)
+    public async Task<bool> UnregisterAsync(Guid subscriptionId, CancellationToken cancellationToken = default)
     {
         using var _ = await mutex.AcquireAsync(cancellationToken);
 

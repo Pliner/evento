@@ -71,7 +71,7 @@ public class DbSubscriptionRepository : ISubscriptionRepository
             ).SingleOrDefault();
     }
 
-    public async Task DeactivateAsync(string id, CancellationToken cancellationToken = default)
+    public async Task DeactivateAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 

@@ -26,7 +26,7 @@ public class SubscriptionsController : ControllerBase
 
         var newSubscription = new Subscription
         (
-            Id: Guid.NewGuid().ToString(),
+            Id: Guid.NewGuid(),
             Name: subscription.Name,
             Version: (existingSubscription?.Version ?? 0) + 1,
             CreatedAt: DateTimeOffset.UtcNow,

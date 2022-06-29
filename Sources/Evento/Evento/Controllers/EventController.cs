@@ -15,8 +15,7 @@ public class EventController : ControllerBase
 
     [HttpPost]
     public async Task SaveAsync(
-        [FromQuery] string type,
-        CancellationToken cancellationToken
+        [FromQuery] string type, CancellationToken cancellationToken
     )
     {
         await using var stream = new ArrayPooledMemoryStream();

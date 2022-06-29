@@ -3,7 +3,7 @@ namespace Evento.Db;
 // ReSharper disable PropertyCanBeMadeInitOnly.Global
 public class SubscriptionEntity
 {
-    public string Id { get; set; } = null!;
+    public Guid Id { get; set; }
     public string Name { get; set; } = null!;
     public int Version { get; set; }
     public DateTimeOffset CreatedAt { get; set; }

@@ -1,7 +1,7 @@
 namespace Evento.Repositories.Subscription;
 
 public record Subscription(
-    string Id,
+    Guid Id,
     string Name,
     int Version,
     DateTimeOffset CreatedAt,

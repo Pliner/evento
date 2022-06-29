@@ -12,19 +12,18 @@ public class ActiveSubscriptionsManagerTests
     public async Task Should_do_nothing_When_no_subscription()
     {
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
-        subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Subscription>());
+        subscriptionRepository.SelectActiveAsync().Returns(Array.Empty<Subscription>());
 
         var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new HashSet<string>());
+        subscriptionRegistry.Registered.Returns(new HashSet<Guid>());
 
         var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
 
         await manager.ExecuteAsync();
 
         await subscriptionRegistry.DidNotReceive().RegisterAsync(Arg.Any<Subscription>());
-        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<string>());
-        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<string>());
+        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<Guid>());
+        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
     [Fact]
@@ -32,7 +31,7 @@ public class ActiveSubscriptionsManagerTests
     {
         var subscription = new Subscription
         (
-            Id: "id",
+            Id: Guid.NewGuid(),
             Name: "name",
             Version: 1,
             CreatedAt: DateTime.Today,
@@ -40,27 +39,27 @@ public class ActiveSubscriptionsManagerTests
             Endpoint: "endpoint"
         );
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
-        subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
-            .Returns(new[] { subscription });
+        subscriptionRepository.SelectActiveAsync().Returns(new[] { subscription });
 
         var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new HashSet<string>());
+        subscriptionRegistry.Registered.Returns(new HashSet<Guid>());
 
         var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
 
         await manager.ExecuteAsync();
 
         await subscriptionRegistry.Received().RegisterAsync(Arg.Is(subscription));
-        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<string>());
-        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<string>());
+        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<Guid>());
+        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
     [Fact]
     public async Task Should_try_to_register_new_subscription_When_it_has_already_been_registered()
     {
+        var id = Guid.NewGuid();
         var subscription = new Subscription
         (
-            Id: "id",
+            Id: id,
             Name: "name",
             Version: 1,
             CreatedAt: DateTime.Today,
@@ -69,28 +68,28 @@ public class ActiveSubscriptionsManagerTests
         );
 
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
-        subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
-            .Returns(new[] { subscription });
+        subscriptionRepository.SelectActiveAsync().Returns(new[] { subscription });
 
         var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new[] { "id" }.ToHashSet());
+        subscriptionRegistry.Registered.Returns(new[] { id }.ToHashSet());
 
         var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
 
         await manager.ExecuteAsync();
 
         await subscriptionRegistry.Received().RegisterAsync(Arg.Is(subscription));
-        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<string>());
-        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<string>());
+        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<Guid>());
+        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
 
     [Fact]
     public async Task Should_unregister_old_subscription_When_new_is_added()
     {
+        var id = Guid.NewGuid();
         var oldSubscription = new Subscription
         (
-            Id: "1",
+            Id: id,
             Name: "name",
             Version: 1,
             CreatedAt: DateTime.Today,
@@ -99,7 +98,7 @@ public class ActiveSubscriptionsManagerTests
         );
         var newSubscription = new Subscription
         (
-            Id: "2",
+            Id: Guid.NewGuid(),
             Name: "name",
             Version: 2,
             CreatedAt: DateTime.Today,
@@ -108,12 +107,11 @@ public class ActiveSubscriptionsManagerTests
         );
 
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
-        subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
-            .Returns(new[] { oldSubscription, newSubscription });
+        subscriptionRepository.SelectActiveAsync().Returns(new[] { oldSubscription, newSubscription });
 
         var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new[] { "1" }.ToHashSet());
-        subscriptionRegistry.UnregisterAsync(Arg.Any<string>()).Returns(true);
+        subscriptionRegistry.Registered.Returns(new[] { id }.ToHashSet());
+        subscriptionRegistry.UnregisterAsync(Arg.Any<Guid>()).Returns(true);
 
         var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
 
@@ -127,9 +125,10 @@ public class ActiveSubscriptionsManagerTests
     [Fact]
     public async Task Should_try_unregister_old_subscription_multiple_times_When_new_is_added()
     {
+        var id = Guid.NewGuid();
         var oldSubscription = new Subscription
         (
-            Id: "1",
+            Id: id,
             Name: "name",
             Version: 1,
             CreatedAt: DateTime.Today,
@@ -139,7 +138,7 @@ public class ActiveSubscriptionsManagerTests
 
         var newSubscription = new Subscription
         (
-            Id: "2",
+            Id: Guid.NewGuid(),
             Name: "name",
             Version: 2,
             CreatedAt: DateTime.Today,
@@ -152,8 +151,8 @@ public class ActiveSubscriptionsManagerTests
             .Returns(new[] { oldSubscription, newSubscription });
 
         var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new[] { "1" }.ToHashSet());
-        subscriptionRegistry.UnregisterAsync(Arg.Any<string>()).Returns(false);
+        subscriptionRegistry.Registered.Returns(new[] { id }.ToHashSet());
+        subscriptionRegistry.UnregisterAsync(Arg.Any<Guid>()).Returns(false);
 
         var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
 
@@ -161,6 +160,6 @@ public class ActiveSubscriptionsManagerTests
 
         await subscriptionRegistry.Received().RegisterAsync(Arg.Is(newSubscription));
         await subscriptionRegistry.Received().UnregisterAsync(Arg.Is(oldSubscription.Id));
-        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<string>());
+        await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 }
