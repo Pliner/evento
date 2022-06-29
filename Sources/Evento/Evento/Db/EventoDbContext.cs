@@ -10,6 +10,7 @@ public class EventoDbContext : DbContext
     }
 
     public DbSet<SubscriptionEntity> Subscriptions { get; set; } = null!;
+    public DbSet<FailedEventEntity> FailedEvents { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
