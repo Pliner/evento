@@ -7,6 +7,9 @@ using Evento.Services;
 using Evento.Services.PubSub;
 using Evento.Services.SubscriptionRegistry;
 using Evento.Services.Transport;
+using Polly;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Extensions.Http;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,7 +22,19 @@ builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>
 builder.Services.AddSingleton<IEventTransport, EventTransport>();
 builder.Services.AddSingleton<ISubscriptionRegistry, SubscriptionRegistry>();
 builder.Services.AddSingleton<IEventPubSub, RmqBasedPubSub>();
-builder.Services.AddHttpClient<EventTransport>();
+builder.Services.AddHttpClient<EventTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
+    .AddPolicyHandler(
+        HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(
+                Backoff.DecorrelatedJitterBackoffV2(
+                    medianFirstRetryDelay: TimeSpan.FromSeconds(1),
+                    retryCount: 5,
+                    fastFirst: true
+                )
+            )
+    )
+    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(20));
 builder.Services.RegisterEasyNetQ(
     c =>
     {
