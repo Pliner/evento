@@ -35,7 +35,7 @@ internal sealed class ArrayPooledMemoryStream : Stream, IMemoryOwner<byte>
         get => position;
         set
         {
-            if (value < 0 || value > int.MaxValue)
+            if (value is < 0 or > int.MaxValue)
                 throw new ArgumentOutOfRangeException(nameof(value));
 
             position = (int)value;
@@ -119,10 +119,10 @@ internal sealed class ArrayPooledMemoryStream : Stream, IMemoryOwner<byte>
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (rentBuffer != null)
+        if (rentBuffer != Array.Empty<byte>())
         {
             ArrayPool<byte>.Shared.Return(rentBuffer);
-            rentBuffer = null;
+            rentBuffer = Array.Empty<byte>();
         }
 
         length = 0;
