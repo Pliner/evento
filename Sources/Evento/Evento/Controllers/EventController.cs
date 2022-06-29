@@ -1,6 +1,5 @@
 using Evento.Internals;
 using Evento.Services;
-using Evento.Services.PubSub;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Evento.Controllers;
@@ -9,9 +8,9 @@ namespace Evento.Controllers;
 [Route("events")]
 public class EventController : ControllerBase
 {
-    private readonly IEventPubSub pubSub;
+    private readonly IPublishSubscribeTransport pubSub;
 
-    public EventController(IEventPubSub pubSub) => this.pubSub = pubSub;
+    public EventController(IPublishSubscribeTransport pubSub) => this.pubSub = pubSub;
 
     [HttpPost]
     public async Task SaveAsync(
@@ -20,7 +19,7 @@ public class EventController : ControllerBase
     {
         await using var stream = new ArrayPooledMemoryStream();
         await Request.Body.CopyToAsync(stream, cancellationToken);
-
+ 
         var @event = new Event(type, stream.Memory);
         await pubSub.PublishAsync(@event, cancellationToken);
     }
