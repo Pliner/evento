@@ -1,6 +1,5 @@
 using Evento.Repositories.Subscription;
 using Evento.Services;
-using Evento.Services.SubscriptionRegistry;
 using NSubstitute;
 using Xunit;
 
@@ -14,15 +13,15 @@ public class ActiveSubscriptionsManagerTests
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync().Returns(Array.Empty<Subscription>());
 
-        var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new HashSet<Guid>());
+        var transport = Substitute.For<IPublishSubscribeTransport>();
+        transport.ActiveSubscriptions.Returns(new HashSet<Guid>());
 
-        var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
+        var manager = new ActiveSubscriptionsManager(subscriptionRepository, transport);
 
         await manager.ExecuteAsync();
 
-        await subscriptionRegistry.DidNotReceive().RegisterAsync(Arg.Any<Subscription>());
-        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<Guid>());
+        await transport.DidNotReceive().SubscribeAsync(Arg.Any<Subscription>());
+        await transport.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
@@ -41,15 +40,15 @@ public class ActiveSubscriptionsManagerTests
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync().Returns(new[] { subscription });
 
-        var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new HashSet<Guid>());
+        var transport = Substitute.For<IPublishSubscribeTransport>();
+        transport.ActiveSubscriptions.Returns(new HashSet<Guid>());
 
-        var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
+        var manager = new ActiveSubscriptionsManager(subscriptionRepository, transport);
 
         await manager.ExecuteAsync();
 
-        await subscriptionRegistry.Received().RegisterAsync(Arg.Is(subscription));
-        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<Guid>());
+        await transport.Received().SubscribeAsync(Arg.Is(subscription));
+        await transport.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
@@ -70,15 +69,15 @@ public class ActiveSubscriptionsManagerTests
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync().Returns(new[] { subscription });
 
-        var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new[] { id }.ToHashSet());
+        var transport = Substitute.For<IPublishSubscribeTransport>();
+        transport.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
 
-        var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
+        var manager = new ActiveSubscriptionsManager(subscriptionRepository, transport);
 
         await manager.ExecuteAsync();
 
-        await subscriptionRegistry.Received().RegisterAsync(Arg.Is(subscription));
-        await subscriptionRegistry.DidNotReceive().UnregisterAsync(Arg.Any<Guid>());
+        await transport.Received().SubscribeAsync(Arg.Is(subscription));
+        await transport.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
@@ -109,16 +108,16 @@ public class ActiveSubscriptionsManagerTests
         var subscriptionRepository = Substitute.For<ISubscriptionRepository>();
         subscriptionRepository.SelectActiveAsync().Returns(new[] { oldSubscription, newSubscription });
 
-        var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new[] { id }.ToHashSet());
-        subscriptionRegistry.UnregisterAsync(Arg.Any<Guid>()).Returns(true);
+        var transport = Substitute.For<IPublishSubscribeTransport>();
+        transport.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
+        transport.UnsubscribeAsync(Arg.Any<Guid>()).Returns(true);
 
-        var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
+        var manager = new ActiveSubscriptionsManager(subscriptionRepository, transport);
 
         await manager.ExecuteAsync();
 
-        await subscriptionRegistry.Received().RegisterAsync(Arg.Is(newSubscription));
-        await subscriptionRegistry.Received().UnregisterAsync(Arg.Is(oldSubscription.Id));
+        await transport.Received().SubscribeAsync(Arg.Is(newSubscription));
+        await transport.Received().UnsubscribeAsync(Arg.Is(oldSubscription.Id));
         await subscriptionRepository.Received().DeactivateAsync(Arg.Is(oldSubscription.Id));
     }
 
@@ -150,16 +149,16 @@ public class ActiveSubscriptionsManagerTests
         subscriptionRepository.SelectActiveAsync(Arg.Any<CancellationToken>())
             .Returns(new[] { oldSubscription, newSubscription });
 
-        var subscriptionRegistry = Substitute.For<ISubscriptionRegistry>();
-        subscriptionRegistry.Registered.Returns(new[] { id }.ToHashSet());
-        subscriptionRegistry.UnregisterAsync(Arg.Any<Guid>()).Returns(false);
+        var transport = Substitute.For<IPublishSubscribeTransport>();
+        transport.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
+        transport.UnsubscribeAsync(Arg.Any<Guid>()).Returns(false);
 
-        var manager = new ActiveSubscriptionsManager(subscriptionRepository, subscriptionRegistry);
+        var manager = new ActiveSubscriptionsManager(subscriptionRepository, transport);
 
         await manager.ExecuteAsync();
 
-        await subscriptionRegistry.Received().RegisterAsync(Arg.Is(newSubscription));
-        await subscriptionRegistry.Received().UnregisterAsync(Arg.Is(oldSubscription.Id));
+        await transport.Received().SubscribeAsync(Arg.Is(newSubscription));
+        await transport.Received().UnsubscribeAsync(Arg.Is(oldSubscription.Id));
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 }

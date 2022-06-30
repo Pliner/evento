@@ -4,9 +4,6 @@ using Evento.Db;
 using Evento.Infrastructure;
 using Evento.Repositories.Subscription;
 using Evento.Services;
-using Evento.Services.PubSub;
-using Evento.Services.SubscriptionRegistry;
-using Evento.Services.Transport;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
@@ -19,10 +16,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging(c => c.AddConsole());
 builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>();
-builder.Services.AddSingleton<IEventTransport, EventTransport>();
-builder.Services.AddSingleton<ISubscriptionRegistry, SubscriptionRegistry>();
-builder.Services.AddSingleton<IEventPubSub, RmqBasedPubSub>();
-builder.Services.AddHttpClient<EventTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
+builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
+builder.Services.AddSingleton<IPublishSubscribeTransport, RmqBasedTransport>();
+builder.Services.AddHttpClient<HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
     .AddPolicyHandler(
         HttpPolicyExtensions
             .HandleTransientHttpError()
