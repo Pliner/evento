@@ -27,12 +27,12 @@ public class ActiveSubscriptionsManager : IPeriodicJob
         this.publishSubscribeTransport = publishSubscribeTransport;
 
         failedEventsCounter = metricsFactory.CreateCounter(
-            "evento_events_failed",
+            "evento_events_sent_failures",
             "Count of events that haven't been sent successfully by Evento.",
             new CounterConfiguration { LabelNames = new[] { "event_type", "subscription_name" } }
         );
         totalEventsCounter = metricsFactory.CreateCounter(
-            "evento_events_total",
+            "evento_events_sent_total",
             "Count of events that have been sent by Evento.",
             new CounterConfiguration { LabelNames = new[] { "event_type", "subscription_name" } }
         );
