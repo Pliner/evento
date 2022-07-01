@@ -9,7 +9,7 @@ public class ActiveSubscriptionsManager : IPeriodicJob
     private readonly ILogger<ActiveSubscriptionsManager> logger;
     private readonly ISubscriptionRepository subscriptionRepository;
     private readonly IDirectTransport transport;
-    private readonly IPublishSubcribeTransport publishSubcribeTransport;
+    private readonly IPublishSubscribeTransport publishSubscribeTransport;
     private readonly Counter failedEventsCounter;
     private readonly Counter totalEventsCounter;
 
@@ -17,14 +17,14 @@ public class ActiveSubscriptionsManager : IPeriodicJob
         ILogger<ActiveSubscriptionsManager> logger,
         ISubscriptionRepository subscriptionRepository,
         IDirectTransport transport,
-        IPublishSubcribeTransport publishSubcribeTransport,
+        IPublishSubscribeTransport publishSubscribeTransport,
         IMetricFactory metricsFactory
     )
     {
         this.logger = logger;
         this.subscriptionRepository = subscriptionRepository;
         this.transport = transport;
-        this.publishSubcribeTransport = publishSubcribeTransport;
+        this.publishSubscribeTransport = publishSubscribeTransport;
 
         failedEventsCounter = metricsFactory.CreateCounter(
             "evento_events_failed",
@@ -44,12 +44,12 @@ public class ActiveSubscriptionsManager : IPeriodicJob
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         var activeSubscriptions = await subscriptionRepository.SelectActiveAsync(cancellationToken);
-        var staleSubscriptionsIds = publishSubcribeTransport.ActiveSubscriptions.ToHashSet();
+        var staleSubscriptionsIds = publishSubscribeTransport.ActiveSubscriptions.ToHashSet();
 
         foreach (var activeSubscription in activeSubscriptions)
         {
             staleSubscriptionsIds.Remove(activeSubscription.Id);
-            await publishSubcribeTransport.SubscribeAsync(
+            await publishSubscribeTransport.SubscribeAsync(
                 activeSubscription,
                 async (s, e, c) =>
                 {
@@ -86,7 +86,7 @@ public class ActiveSubscriptionsManager : IPeriodicJob
 
         foreach (var staleSubscriptionId in staleSubscriptionsIds.Concat(notLastActiveSubscription))
         {
-            var wasUnregistered = await publishSubcribeTransport.UnsubscribeAsync(staleSubscriptionId, cancellationToken);
+            var wasUnregistered = await publishSubscribeTransport.UnsubscribeAsync(staleSubscriptionId, cancellationToken);
             if (!wasUnregistered) continue;
 
             await subscriptionRepository.DeactivateAsync(staleSubscriptionId, cancellationToken);

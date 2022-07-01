@@ -7,7 +7,7 @@ using Evento.Repositories.Subscription;
 
 namespace Evento.Services;
 
-public class RmqBasedTransport : IPublishSubcribeTransport
+public class RmqBasedTransport : IPublishSubscribeTransport
 {
     private const string ExchangeName = "events";
 

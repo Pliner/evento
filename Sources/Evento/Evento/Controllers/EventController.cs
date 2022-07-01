@@ -8,9 +8,9 @@ namespace Evento.Controllers;
 [Route("events")]
 public class EventController : ControllerBase
 {
-    private readonly IPublishSubcribeTransport publishSubcribeTransport;
+    private readonly IPublishSubscribeTransport publishSubscribeTransport;
 
-    public EventController(IPublishSubcribeTransport publishSubcribeTransport) => this.publishSubcribeTransport = publishSubcribeTransport;
+    public EventController(IPublishSubscribeTransport publishSubscribeTransport) => this.publishSubscribeTransport = publishSubscribeTransport;
 
     [HttpPost]
     public async Task SaveAsync(
@@ -21,6 +21,6 @@ public class EventController : ControllerBase
         await Request.Body.CopyToAsync(stream, cancellationToken);
 
         var @event = new Event(type, stream.Memory);
-        await publishSubcribeTransport.PublishAsync(@event, cancellationToken);
+        await publishSubscribeTransport.PublishAsync(@event, cancellationToken);
     }
 }
