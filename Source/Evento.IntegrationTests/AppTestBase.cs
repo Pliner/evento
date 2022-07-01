@@ -4,6 +4,8 @@ using DotNet.Testcontainers.Containers.Configurations.MessageBrokers;
 using DotNet.Testcontainers.Containers.Modules.Abstractions;
 using DotNet.Testcontainers.Containers.Modules.Databases;
 using DotNet.Testcontainers.Containers.Modules.MessageBrokers;
+using EasyNetQ.Management.Client;
+using EasyNetQ.Management.Client.Model;
 using Xunit;
 
 namespace Evento.IntegrationTests;
@@ -42,6 +44,39 @@ public class AppTestBase : IAsyncLifetime
     {
         await rmqContainer.StartAsync();
         await pgContainer.StartAsync();
+
+        using var rmqManagementClient = new ManagementClient(rmqContainer.Hostname, "guest", "guest", rmqContainer.Port);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+        await WaitForRabbitMqReadyAsync(rmqManagementClient, cts.Token);
+    }
+    
+    private static async Task WaitForRabbitMqReadyAsync(ManagementClient managementClient, CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (await IsRabbitMqReadyAsync(managementClient, cancellationToken))
+                return;
+
+            await Task.Delay(500, cancellationToken);
+        }
+    }
+
+    private static async Task<bool> IsRabbitMqReadyAsync(ManagementClient managementClient, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await managementClient.IsAliveAsync(new Vhost{Name = "/"}, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public async Task DisposeAsync()
