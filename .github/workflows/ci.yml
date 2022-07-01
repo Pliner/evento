@@ -10,7 +10,6 @@ on:
       - main
 
 env:
-  PROJECT: evento
   REGISTRY: ghcr.io
 
 jobs:
@@ -33,9 +32,9 @@ jobs:
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: ${{ matrix.dotnet }}
-    - name: Install dependencies
+    - name: Install Dependencies
       run: dotnet restore ${{ github.workspace }}/Source/Evento.sln
-    - name: Check formatting
+    - name: Check Formatting
       run: dotnet format --no-restore --verify-no-changes --severity warn ./Source/Evento.sln || (echo "Run 'dotnet format' to fix issues" && exit 1)
     - name: Build
       run: dotnet build ${{ github.workspace }}/Source/Evento.sln --configuration Release
@@ -45,7 +44,7 @@ jobs:
         dotnet test --configuration Release --no-build
 
   publish-to-docker-registry:
-    name: Publish to Docker Registry
+    name: Publish To Docker Registry
     runs-on: ubuntu-18.04
     needs: test
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
@@ -57,19 +56,19 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Log in to the Container registry
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+      - name: Log in to the Container Registry
+        uses: docker/login-action@v2.0.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@v4.0.1
         with:
-          images: ${{ env.REGISTRY }}/${{ env.PROJECT }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+          images: ghcr.io/${{ github.repository }}
+      - name: Build & Push Docker Image
+        uses: docker/build-push-action@v3.0.0
         with:
           context: './Source/Evento'
           push: true
