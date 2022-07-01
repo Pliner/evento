@@ -19,7 +19,7 @@ public class EventTests : AppTestBase
         using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         saveResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var @event = new Event("type", new byte[] { 42 }.AsMemory());
         var parameters = new Dictionary<string, string>
@@ -31,7 +31,7 @@ public class EventTests : AppTestBase
         );
         submitEventResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         app.ReceivedEvents.Should().BeEquivalentTo(
             new[] { @event },
@@ -49,7 +49,7 @@ public class EventTests : AppTestBase
         using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         saveResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var @event = new Event("type", new byte[] { 42 }.AsMemory());
         var parameters = new Dictionary<string, string>
@@ -61,7 +61,7 @@ public class EventTests : AppTestBase
         );
         submitEventResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         app.FailedAttemptsCount.Should().Be(6);
     }
