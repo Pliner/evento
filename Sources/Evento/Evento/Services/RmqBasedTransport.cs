@@ -7,23 +7,18 @@ using Evento.Repositories.Subscription;
 
 namespace Evento.Services;
 
-public class RmqBasedTransport : IPublishSubscribeTransport
+public class RmqBasedTransport : IPubSubTransport
 {
     private const string ExchangeName = "events";
 
     private readonly IAdvancedBus bus;
-    private readonly IDirectTransport transport;
 
     private readonly ConcurrentDictionary<string, Exchange> exchanges = new();
 
     private readonly ConcurrentDictionary<Guid, Consumer> consumerPerSubscription = new();
     private readonly AsyncLock mutex = new();
 
-    public RmqBasedTransport(IAdvancedBus bus, IDirectTransport transport)
-    {
-        this.bus = bus;
-        this.transport = transport;
-    }
+    public RmqBasedTransport(IAdvancedBus bus) => this.bus = bus;
 
     public async Task PublishAsync(Event @event, CancellationToken cancellationToken = default)
     {
@@ -39,7 +34,11 @@ public class RmqBasedTransport : IPublishSubscribeTransport
 
     public IReadOnlySet<Guid> ActiveSubscriptions => consumerPerSubscription.Keys.ToHashSet();
 
-    public async Task SubscribeAsync(Subscription subscription, CancellationToken cancellationToken = default)
+    public async Task SubscribeAsync(
+        Subscription subscription,
+        Func<Subscription, Event, CancellationToken, Task> transportFunc,
+        CancellationToken cancellationToken = default
+    )
     {
         if (consumerPerSubscription.ContainsKey(subscription.Id))
             return;
@@ -65,10 +64,10 @@ public class RmqBasedTransport : IPublishSubscribeTransport
             queue,
             async (b, p, _, c) =>
             {
-                await transport.SendAsync(subscription, new Event(p.Type, b), c);
+                await transportFunc(subscription, new Event(p.Type, b), c);
                 return AckStrategies.Ack;
             },
-            _ => { }
+            c => c.WithPrefetchCount(50)
         );
 
         if (consumerPerSubscription.TryAdd(subscription.Id, new Consumer(bus, queue, bindings, consumer)))

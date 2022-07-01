@@ -26,8 +26,8 @@ namespace Evento.Db.Migrations
 
             modelBuilder.Entity("Evento.Db.Subscription", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("text")
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<bool>("Active")
