@@ -1,11 +1,14 @@
 using System.Collections.Concurrent;
+using Evento.Db;
 using Evento.Services;
 using JustEat.HttpClientInterception;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Http;
 
 namespace Evento.IntegrationTests;
@@ -53,22 +56,26 @@ internal class AppFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureServices(
-                s => s.AddSingleton<IHttpMessageHandlerBuilderFilter, InterceptionFilter>(
-                    _ => new InterceptionFilter(httpClientInterceptorOptions)
-                )
-            )
-            .ConfigureAppConfiguration(
-                x => x.AddInMemoryCollection(
-                    new Dictionary<string, string>
+        base.ConfigureWebHost(
+            builder.ConfigureServices(
+                    s =>
                     {
-                        { "RMQ_HOSTS", $"{rmqHost}:{rmqPort}" },
-                        { "POSTGRES_HOST", pgHost },
-                        { "POSTGRES_PORT", pgPort.ToString() },
-                    }
+                        s.AddSingleton<IHttpMessageHandlerBuilderFilter, InterceptionFilter>(
+                                _ => new InterceptionFilter(httpClientInterceptorOptions)
+                            )
+                        .Insert(0, ServiceDescriptor.Singleton<IHostedService, MigrationService>());
+                    })
+                .ConfigureAppConfiguration(
+                    x => x.AddInMemoryCollection(
+                        new Dictionary<string, string>
+                        {
+                            { "RMQ_HOSTS", $"{rmqHost}:{rmqPort}" },
+                            { "POSTGRES_HOST", pgHost },
+                            { "POSTGRES_PORT", pgPort.ToString() },
+                        }
+                    )
                 )
-            );
-        base.ConfigureWebHost(builder);
+        );
     }
 
     private sealed class InterceptionFilter : IHttpMessageHandlerBuilderFilter
@@ -84,5 +91,20 @@ internal class AppFactory : WebApplicationFactory<Program>
                 next(builder);
                 builder.AdditionalHandlers.Add(options.CreateHttpMessageHandler());
             };
+    }
+
+    public class MigrationService : IHostedService
+    {
+        private readonly IDbContextFactory<EventoDbContext> dbContextFactory;
+
+        public MigrationService(IDbContextFactory<EventoDbContext> dbContextFactory) => this.dbContextFactory = dbContextFactory;
+
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            await context.Database.MigrateAsync(cancellationToken);
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

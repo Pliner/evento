@@ -1,11 +1,8 @@
 using System.Net.Http.Json;
 using Evento.Controllers;
-using Evento.Db;
 using Evento.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Evento.IntegrationTests;
@@ -18,15 +15,11 @@ public class EventTests : AppTestBase
         await using var app = CreateApp();
         using var client = app.CreateClient();
 
-        var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<EventoDbContext>>();
-        await using (var dbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None))
-            await dbContext.Database.MigrateAsync();
-
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "http://hooks/200");
         using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         saveResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var @event = new Event("type", new byte[] { 42 }.AsMemory());
         var parameters = new Dictionary<string, string>
@@ -38,7 +31,7 @@ public class EventTests : AppTestBase
         );
         submitEventResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         app.ReceivedEvents.Should().BeEquivalentTo(
             new[] { @event },
@@ -52,15 +45,11 @@ public class EventTests : AppTestBase
         await using var app = CreateApp();
         using var client = app.CreateClient();
 
-        var dbContextFactory = app.Services.GetRequiredService<IDbContextFactory<EventoDbContext>>();
-        await using (var dbContext = await dbContextFactory.CreateDbContextAsync(CancellationToken.None))
-            await dbContext.Database.MigrateAsync();
-
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "http://hooks/500");
         using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
         saveResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         var @event = new Event("type", new byte[] { 42 }.AsMemory());
         var parameters = new Dictionary<string, string>
@@ -72,7 +61,7 @@ public class EventTests : AppTestBase
         );
         submitEventResponse.EnsureSuccessStatusCode();
 
-        await Task.Delay(TimeSpan.FromSeconds(2));
+        await Task.Delay(TimeSpan.FromSeconds(10));
 
         app.FailedAttemptsCount.Should().Be(6);
     }

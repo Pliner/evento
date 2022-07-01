@@ -15,7 +15,7 @@ public class AppTestBase : IAsyncLifetime
             new RabbitMqTestcontainerConfiguration("rabbitmq:3.10-management")
             {
                 Username = "guest",
-                Password = "guest"
+                Password = "guest",
             }
         )
         .Build();
@@ -40,13 +40,11 @@ public class AppTestBase : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await rmqContainer.StartAsync();
-        await pgContainer.StartAsync();
+        await Task.WhenAll(rmqContainer.StartAsync(), pgContainer.StartAsync());
     }
 
     public async Task DisposeAsync()
     {
-        await rmqContainer.StopAsync();
-        await pgContainer.StopAsync();
+        await Task.WhenAll(rmqContainer.StopAsync(), pgContainer.StopAsync());
     }
 }

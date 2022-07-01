@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    tags: [ '[0-9]+.[0-9]+.[0-9]+*' ]
+  pull_request:
+    branches:
+      - main
+
+env:
+  PROJECT: evento
+  REGISTRY: ghcr.io
+
+jobs:
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-18.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        dotnet: ['6.0.x']
+      fail-fast: true
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Setup .NET Core ${{ matrix.dotnet }}
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: ${{ matrix.dotnet }}
+    - name: Install dependencies
+      run: dotnet restore ${{ github.workspace }}/Source/Evento.sln
+    - name: Check formatting
+      run: dotnet format --no-restore --verify-no-changes --severity warn ./Source/Evento.sln || (echo "Run 'dotnet format' to fix issues" && exit 1)
+    - name: Build
+      run: dotnet build ${{ github.workspace }}/Source/Evento.sln --configuration Release
+    - name: UnitTests
+      run: |
+        cd ${{ github.workspace }}/Source/Evento.UnitTests
+        dotnet test --configuration Release --no-build
+
+  publish-to-docker-registry:
+    name: Publish to Docker Registry
+    runs-on: ubuntu-18.04
+    needs: test
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Log in to the Container registry
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.PROJECT }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: './Source/Evento'
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

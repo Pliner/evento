@@ -15,7 +15,6 @@ public static class DbContextOptionsBuilderExtensions
             $"User Id={user};Host={host};Port={port};Database={database};Password={password};Pooling=true;";
         builder.UseNpgsql(connectionString);
         builder.UseSnakeCaseNamingConvention();
-        builder.EnableSensitiveDataLogging();
         return builder;
     }
 }
