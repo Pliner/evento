@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Globalization;
 using Evento.Services;
 using JustEat.HttpClientInterception;
 using Microsoft.AspNetCore.Hosting;
@@ -19,8 +18,10 @@ internal class AppFactory : WebApplicationFactory<Program>
     private readonly int pgPort;
     private readonly HttpClientInterceptorOptions httpClientInterceptorOptions = new() { ThrowOnMissingRegistration = true };
     private readonly ConcurrentQueue<Event> events = new();
+    private long failedEventsCount;
 
     public IReadOnlyList<Event> ReceivedEvents => events.ToList();
+    public long FailedAttemptsCount => Interlocked.Read(ref failedEventsCount);
 
     public AppFactory(string rmqHost, int rmqPort, string pgHost, int pgPort)
     {
@@ -29,22 +30,25 @@ internal class AppFactory : WebApplicationFactory<Program>
         this.pgHost = pgHost;
         this.pgPort = pgPort;
         httpClientInterceptorOptions.Register(
-            new[]
-            {
-                new HttpRequestInterceptionBuilder()
-                    .For(x => x.Method == HttpMethod.Post && (x.RequestUri?.ToString().StartsWith("http://hooks/success") ?? false))
-                    .IgnoringQuery()
-                    .WithInterceptionCallback(
-                        async (m, c) =>
-                        {
-                            var query = QueryHelpers.ParseQuery(m.RequestUri?.Query);
-                            var type = query["type"].Single();
-                            var payload = await (m.Content ?? new ByteArrayContent(Array.Empty<byte>())).ReadAsByteArrayAsync(c);
-                            var @event = new Event(type, payload.AsMemory());
-                            events.Enqueue(@event);
-                        }
-                    )
-            });
+            new HttpRequestInterceptionBuilder()
+                .For(x => x.Method == HttpMethod.Post && (x.RequestUri?.ToString().StartsWith("http://hooks/200") ?? false))
+                .IgnoringQuery()
+                .WithInterceptionCallback(
+                    async (m, c) =>
+                    {
+                        var query = QueryHelpers.ParseQuery(m.RequestUri?.Query);
+                        var type = query["type"].Single();
+                        var payload = await (m.Content ?? new ByteArrayContent(Array.Empty<byte>())).ReadAsByteArrayAsync(c);
+                        var @event = new Event(type, payload.AsMemory());
+                        events.Enqueue(@event);
+                    }
+                ),
+            new HttpRequestInterceptionBuilder()
+                .For(x => x.Method == HttpMethod.Post && (x.RequestUri?.ToString().StartsWith("http://hooks/500") ?? false))
+                .IgnoringQuery()
+                .WithInterceptionCallback(x => Interlocked.Increment(ref failedEventsCount))
+                .WithStatus(500)
+        );
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -65,8 +69,6 @@ internal class AppFactory : WebApplicationFactory<Program>
                 )
             );
         base.ConfigureWebHost(builder);
-
-
     }
 
     private sealed class InterceptionFilter : IHttpMessageHandlerBuilderFilter

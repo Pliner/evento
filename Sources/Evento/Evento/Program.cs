@@ -18,19 +18,24 @@ builder.Services.AddLogging(c => c.AddConsole());
 builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>();
 builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
 builder.Services.AddSingleton<IPublishSubscribeTransport, RmqBasedTransport>();
-builder.Services.AddHttpClient<HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
+builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
     .AddPolicyHandler(
         HttpPolicyExtensions
             .HandleTransientHttpError()
             .WaitAndRetryAsync(
                 Backoff.DecorrelatedJitterBackoffV2(
-                    medianFirstRetryDelay: TimeSpan.FromSeconds(1),
+                    medianFirstRetryDelay: builder.Environment.IsProduction()
+                        ? TimeSpan.FromSeconds(1)
+                        : TimeSpan.FromSeconds(0.1),
                     retryCount: 5,
                     fastFirst: true
                 )
             )
     )
-    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(20));
+    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(20)))
+    .UseHttpClientMetrics();
+builder.Services.AddSingleton<IMetricFactory>(Metrics.WithCustomRegistry(Metrics.DefaultRegistry));
+
 builder.Services.RegisterEasyNetQ(
     c =>
     {
@@ -54,6 +59,7 @@ builder.Services.AddPeriodicJob<ActiveSubscriptionsManager>();
 builder.Services.AddDbContextFactory<EventoDbContext>(
     (s, o) => o.SetupPostgresql(s.GetRequiredService<IConfiguration>())
 );
+
 
 var app = builder.Build();
 app.UseSwagger();
