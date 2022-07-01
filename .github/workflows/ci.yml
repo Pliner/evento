@@ -43,10 +43,6 @@ jobs:
       run: |
         cd ${{ github.workspace }}/Source/Evento.UnitTests
         dotnet test --configuration Release --no-build
-    - name: Integration.Tests
-      run: |
-        cd ${{ github.workspace }}/Source/Evento.IntegrationTests
-        dotnet test --configuration Release --no-build
 
   publish-to-docker-registry:
     name: Publish to Docker Registry
