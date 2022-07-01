@@ -11,17 +11,17 @@ public class ActiveSubscriptionsManagerTests
 {
     private readonly ActiveSubscriptionsManager manager;
     private readonly ISubscriptionRepository subscriptionRepository;
-    private readonly IPubSubTransport pubSub;
+    private readonly IPublishSubcribeTransport publishSubcribe;
 
     public ActiveSubscriptionsManagerTests()
     {
         subscriptionRepository = Substitute.For<ISubscriptionRepository>();
-        pubSub = Substitute.For<IPubSubTransport>();
+        publishSubcribe = Substitute.For<IPublishSubcribeTransport>();
         manager = new ActiveSubscriptionsManager(
             Substitute.For<ILogger<ActiveSubscriptionsManager>>(),
             subscriptionRepository,
             Substitute.For<IDirectTransport>(),
-            pubSub,
+            publishSubcribe,
             Substitute.For<IMetricFactory>()
         );
     }
@@ -31,12 +31,12 @@ public class ActiveSubscriptionsManagerTests
     {
         subscriptionRepository.SelectActiveAsync().Returns(Array.Empty<Subscription>());
 
-        pubSub.ActiveSubscriptions.Returns(new HashSet<Guid>());
+        publishSubcribe.ActiveSubscriptions.Returns(new HashSet<Guid>());
 
         await manager.ExecuteAsync();
 
-        await pubSub.DidNotReceive().SubscribeAsync(Arg.Any<Subscription>(), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
-        await pubSub.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
+        await publishSubcribe.DidNotReceive().SubscribeAsync(Arg.Any<Subscription>(), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
+        await publishSubcribe.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
@@ -54,12 +54,12 @@ public class ActiveSubscriptionsManagerTests
         );
         subscriptionRepository.SelectActiveAsync().Returns(new[] { subscription });
 
-        pubSub.ActiveSubscriptions.Returns(new HashSet<Guid>());
+        publishSubcribe.ActiveSubscriptions.Returns(new HashSet<Guid>());
 
         await manager.ExecuteAsync();
 
-        await pubSub.Received().SubscribeAsync(Arg.Is(subscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
-        await pubSub.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
+        await publishSubcribe.Received().SubscribeAsync(Arg.Is(subscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
+        await publishSubcribe.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
@@ -78,12 +78,12 @@ public class ActiveSubscriptionsManagerTests
         );
 
         subscriptionRepository.SelectActiveAsync().Returns(new[] { subscription });
-        pubSub.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
+        publishSubcribe.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
 
         await manager.ExecuteAsync();
 
-        await pubSub.Received().SubscribeAsync(Arg.Is(subscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
-        await pubSub.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
+        await publishSubcribe.Received().SubscribeAsync(Arg.Is(subscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
+        await publishSubcribe.DidNotReceive().UnsubscribeAsync(Arg.Any<Guid>());
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 
@@ -113,13 +113,13 @@ public class ActiveSubscriptionsManagerTests
 
         subscriptionRepository.SelectActiveAsync().Returns(new[] { oldSubscription, newSubscription });
 
-        pubSub.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
-        pubSub.UnsubscribeAsync(Arg.Any<Guid>()).Returns(true);
+        publishSubcribe.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
+        publishSubcribe.UnsubscribeAsync(Arg.Any<Guid>()).Returns(true);
 
         await manager.ExecuteAsync();
 
-        await pubSub.Received().SubscribeAsync(Arg.Is(newSubscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
-        await pubSub.Received().UnsubscribeAsync(Arg.Is(oldSubscription.Id));
+        await publishSubcribe.Received().SubscribeAsync(Arg.Is(newSubscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
+        await publishSubcribe.Received().UnsubscribeAsync(Arg.Is(oldSubscription.Id));
         await subscriptionRepository.Received().DeactivateAsync(Arg.Is(oldSubscription.Id));
     }
 
@@ -149,13 +149,13 @@ public class ActiveSubscriptionsManagerTests
 
         subscriptionRepository.SelectActiveAsync().Returns(new[] { oldSubscription, newSubscription });
 
-        pubSub.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
-        pubSub.UnsubscribeAsync(Arg.Any<Guid>()).Returns(false);
+        publishSubcribe.ActiveSubscriptions.Returns(new[] { id }.ToHashSet());
+        publishSubcribe.UnsubscribeAsync(Arg.Any<Guid>()).Returns(false);
 
         await manager.ExecuteAsync();
 
-        await pubSub.Received().SubscribeAsync(Arg.Is(newSubscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
-        await pubSub.Received().UnsubscribeAsync(Arg.Is(oldSubscription.Id));
+        await publishSubcribe.Received().SubscribeAsync(Arg.Is(newSubscription), Arg.Any<Func<Subscription, Event, CancellationToken, Task>>());
+        await publishSubcribe.Received().UnsubscribeAsync(Arg.Is(oldSubscription.Id));
         await subscriptionRepository.DidNotReceive().DeactivateAsync(Arg.Any<Guid>());
     }
 }

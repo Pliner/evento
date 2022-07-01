@@ -17,7 +17,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddLogging(c => c.AddConsole());
 builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>();
 builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
-builder.Services.AddSingleton<IPubSubTransport, RmqBasedTransport>();
+builder.Services.AddSingleton<IPublishSubcribeTransport, RmqBasedTransport>();
 builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
     .AddPolicyHandler(
         HttpPolicyExtensions

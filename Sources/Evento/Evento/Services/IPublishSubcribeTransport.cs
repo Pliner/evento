@@ -2,7 +2,7 @@ using Evento.Repositories.Subscription;
 
 namespace Evento.Services;
 
-public interface IPubSubTransport : IDisposable
+public interface IPublishSubcribeTransport : IDisposable
 {
     Task PublishAsync(Event @event, CancellationToken cancellationToken = default);
 
