@@ -63,7 +63,7 @@ public class ActiveSubscriptionsManager : IPeriodicJob
                     }
                     catch (Exception exception)
                     {
-                        logger.LogError(exception, "Failed to deliver event with type='{EventType}' to subscription with name='{SubscriptionName}'", e.Type, s.Id);
+                        logger.LogError(exception, "Failed to deliver event {EventType} to subscription {SubscriptionName}", e.Type, s.Id);
 
                         failedEventsCounter.Labels(e.Type, s.Name).Inc();
                     }
