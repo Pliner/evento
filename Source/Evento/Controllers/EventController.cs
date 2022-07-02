@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Evento.Controllers;
 
 [ApiController]
-[Route("events")]
+[Route("api/events")]
 public class EventController : ControllerBase
 {
     private readonly IPublishSubscribeTransport publishSubscribeTransport;

@@ -35,4 +35,8 @@
     <ItemGroup>
       <Folder Include="Db\Migrations" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Evento.Client\Evento.Client.csproj" />
+    </ItemGroup>
 </Project>

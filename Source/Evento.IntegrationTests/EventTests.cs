@@ -1,8 +1,6 @@
-using System.Net.Http.Json;
-using Evento.Controllers;
+using Evento.Client;
 using Evento.Services;
 using FluentAssertions;
-using Microsoft.AspNetCore.WebUtilities;
 using Xunit;
 
 namespace Evento.IntegrationTests;
@@ -13,28 +11,21 @@ public class EventTests : AppTestBase
     public async Task Should_process_event()
     {
         await using var app = CreateApp();
-        using var client = app.CreateClient();
+        using var httpClient = app.CreateClient();
+        var eventoClient = new EventoClient(httpClient);
 
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "http://hooks/200");
-        using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
-        saveResponse.EnsureSuccessStatusCode();
+        await eventoClient.AddSubscriptionAsync(newSubscription);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        var @event = new Event("type", new byte[] { 42 }.AsMemory());
-        var parameters = new Dictionary<string, string>
-        {
-            { "type", @event.Type }
-        };
-        var submitEventResponse = await client.PostAsync(
-            QueryHelpers.AddQueryString("/events", parameters), new ReadOnlyMemoryContent(@event.Payload)
-        );
-        submitEventResponse.EnsureSuccessStatusCode();
+        var @event = new EventDto("type", new byte[] { 42 }.AsMemory());
+        await eventoClient.SendEventAsync(@event);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
         app.ReceivedEvents.Should().BeEquivalentTo(
-            new[] { @event },
+            new[] { new Event(@event.Type, @event.Payload) },
             c => c.ComparingByMembers<Event>().Using(new ReadOnlyMemoryComparer<byte>())
         );
     }
@@ -43,23 +34,16 @@ public class EventTests : AppTestBase
     public async Task Should_failed_to_process_event()
     {
         await using var app = CreateApp();
-        using var client = app.CreateClient();
+        using var httpClient = app.CreateClient();
+        var eventoClient = new EventoClient(httpClient);
 
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "http://hooks/500");
-        using var saveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
-        saveResponse.EnsureSuccessStatusCode();
+        await eventoClient.AddSubscriptionAsync(newSubscription);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 
-        var @event = new Event("type", new byte[] { 42 }.AsMemory());
-        var parameters = new Dictionary<string, string>
-        {
-            { "type", @event.Type }
-        };
-        var submitEventResponse = await client.PostAsync(
-            QueryHelpers.AddQueryString("/events", parameters), new ReadOnlyMemoryContent(@event.Payload)
-        );
-        submitEventResponse.EnsureSuccessStatusCode();
+        var @event = new EventDto("type", new byte[] { 42 }.AsMemory());
+        await eventoClient.SendEventAsync(@event);
 
         await Task.Delay(TimeSpan.FromSeconds(10));
 

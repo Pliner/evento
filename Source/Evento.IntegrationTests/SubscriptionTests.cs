@@ -1,5 +1,4 @@
-using System.Net.Http.Json;
-using Evento.Controllers;
+using Evento.Client;
 using FluentAssertions;
 using Xunit;
 
@@ -11,16 +10,14 @@ public class SubscriptionTests : AppTestBase
     public async Task Should_save_subscription()
     {
         await using var app = CreateApp();
-        using var client = app.CreateClient();
+        using var httpClient = app.CreateClient();
+        var eventoClient = new EventoClient(httpClient);
 
         var newSubscription = new NewSubscriptionDto("id", new[] { "type" }, "endpoint");
-        using var initialSaveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
-        initialSaveResponse.EnsureSuccessStatusCode();
+        await eventoClient.AddSubscriptionAsync(newSubscription);
+        await eventoClient.AddSubscriptionAsync(newSubscription);
 
-        using var retrySaveResponse = await client.PostAsync("/subscriptions", JsonContent.Create(newSubscription));
-        retrySaveResponse.EnsureSuccessStatusCode();
-
-        var subscriptions = await client.GetFromJsonAsync<SubscriptionDto[]>("/subscriptions");
+        var subscriptions = await eventoClient.GetSubscriptionsAsync();
 
         subscriptions.Should()
             .BeEquivalentTo(
