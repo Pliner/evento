@@ -35,7 +35,6 @@ builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Time
     .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(20)))
     .UseHttpClientMetrics();
 builder.Services.AddSingleton<IMetricFactory>(Metrics.WithCustomRegistry(Metrics.DefaultRegistry));
-
 builder.Services.RegisterEasyNetQ(
     c =>
     {
@@ -59,7 +58,6 @@ builder.Services.AddPeriodicJob<ActiveSubscriptionsManager>();
 builder.Services.AddDbContextFactory<EventoDbContext>(
     (s, o) => o.SetupPostgresql(s.GetRequiredService<IConfiguration>())
 );
-
 
 var app = builder.Build();
 app.UseSwagger();

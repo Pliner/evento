@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.UnitTests", "Evento.UnitTests\Evento.UnitTests.csproj", "{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.Client", "Evento.Client\Evento.Client.csproj", "{4D13DA5D-0880-4013-8122-D7E67E50E403}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,5 +33,9 @@ Global
 		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

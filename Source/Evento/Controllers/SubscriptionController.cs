@@ -1,10 +1,11 @@
+using Evento.Client;
 using Evento.Repositories.Subscription;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Evento.Controllers;
 
 [ApiController]
-[Route("subscriptions")]
+[Route("api/subscriptions")]
 public class SubscriptionsController : ControllerBase
 {
     private readonly ISubscriptionRepository subscriptionRepository;
@@ -12,7 +13,7 @@ public class SubscriptionsController : ControllerBase
     public SubscriptionsController(ISubscriptionRepository subscriptionRepository) => this.subscriptionRepository = subscriptionRepository;
 
     [HttpPost]
-    public async Task SaveAsync([FromBody] NewSubscriptionDto subscription, CancellationToken cancellationToken)
+    public async Task AddAsync([FromBody] NewSubscriptionDto subscription, CancellationToken cancellationToken)
     {
         var existingSubscription = await subscriptionRepository.GetLastVersionByNameAsync(subscription.Name, cancellationToken);
 
@@ -38,7 +39,7 @@ public class SubscriptionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<SubscriptionDto[]> SelectAsync(CancellationToken cancellationToken)
+    public async Task<SubscriptionDto[]> GetSubscriptionsAsync(CancellationToken cancellationToken)
     {
         var subscriptions = await subscriptionRepository.SelectActiveAsync(cancellationToken);
 
@@ -48,12 +49,3 @@ public class SubscriptionsController : ControllerBase
             .ToArray();
     }
 }
-
-public record NewSubscriptionDto(string Name, string[] Types, string Endpoint);
-
-public record SubscriptionDto(
-    string Name,
-    DateTimeOffset CreatedAt,
-    string[] Types,
-    string Endpoint
-);
