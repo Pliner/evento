@@ -1,0 +1,10 @@
+.git
+.idea
+
+Dockerfile
+Makefile
+docker-compose.yml
+
+*.sln.DotSettings.user
+bin
+obj

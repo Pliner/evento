@@ -1,21 +1,39 @@
-version: "3.8"
+name: evento
 
 services:
   evento:
     build:
-      context: ./evento/
+      context: .
+    image: evento
     ports:
       - "8000:8000"
     restart: always
     depends_on:
       pg:
         condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+      rmq:
+        condition: service_healthy
+
+  migration:
+    build:
+      context: .
+    image: evento
+    entrypoint: "./efbundle"
+    depends_on:
+      - pg
 
   rmq:
     image: "rabbitmq:3.10-management"
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   pg:
     environment:
