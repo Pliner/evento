@@ -5,13 +5,20 @@ EXPOSE 8000
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS publish
 WORKDIR /src
-COPY ["./Evento.csproj", "."]
-RUN dotnet restore "Evento.csproj"
+
+COPY *.sln .
+
+COPY */*.csproj .
+RUN for file in $(ls *.csproj); do mkdir -p ${file%.*} && mv $file ${file%.*}; done
+RUN dotnet restore
+
 COPY . .
-RUN dotnet publish "Evento.csproj" -c Release -o /app/publish
+RUN dotnet build -c Release -o /app
+RUN dotnet publish "Evento/Evento.csproj" -c Release -o /app/publish
+
 RUN dotnet tool install --global dotnet-ef
 ENV PATH $PATH:/root/.dotnet/tools
-RUN dotnet ef migrations bundle -o /app/publish/efbundle
+RUN dotnet ef migrations bundle --project Evento -o /app/publish/efbundle
 
 FROM base AS final
 WORKDIR /app
