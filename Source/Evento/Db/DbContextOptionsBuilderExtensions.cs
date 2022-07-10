@@ -9,7 +9,7 @@ public static class DbContextOptionsBuilderExtensions
         var host = configuration["POSTGRES_HOST"] ?? "pg";
         var port = configuration["POSTGRES_PORT"] ?? "5432";
         var user = configuration["POSTGRES_USER"] ?? "postgres";
-        var database = configuration["POSTGRES_DBNAME"] ?? "postgres";
+        var database = configuration["POSTGRES_DATABASE"] ?? "postgres";
         var password = configuration["POSTGRES_PASSWORD"] ?? "some_secret";
         var connectionString =
             $"User Id={user};Host={host};Port={port};Database={database};Password={password};Pooling=true;";

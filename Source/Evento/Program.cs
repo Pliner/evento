@@ -41,10 +41,10 @@ builder.Services.RegisterEasyNetQ(
         var configuration = c.Resolve<IConfiguration>();
         var parameters = new Dictionary<string, string>
         {
-            { "host", configuration["RMQ_HOSTS"] ?? "rmq" },
-            { "username", configuration["RMQ_USER"] ?? "guest" },
-            { "password", configuration["RMQ_PASSWORD"] ?? "guest" },
-            { "virtualHost", configuration["RMQ_VHOST"] ?? "/" },
+            { "host", configuration["RABBITMQ_HOST"] ?? "rmq" },
+            { "username", configuration["RABBITMQ_USER"] ?? "guest" },
+            { "password", configuration["RABBITMQ_PASSWORD"] ?? "guest" },
+            { "virtualHost", configuration["RABBITMQ_VHOST"] ?? "/" },
             { "publisherConfirms", "True" }
         };
         var connectionString = string.Join(";", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
