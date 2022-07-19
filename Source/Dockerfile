@@ -18,7 +18,7 @@ RUN dotnet publish "Evento/Evento.csproj" -c Release -o /app/publish
 
 RUN dotnet tool install --global dotnet-ef
 ENV PATH $PATH:/root/.dotnet/tools
-RUN dotnet ef migrations bundle --project Evento -o /app/publish/efbundle
+RUN dotnet ef migrations bundle --project Evento --no-build -o /app/publish/efbundle
 
 FROM base AS final
 WORKDIR /app
