@@ -1,9 +1,7 @@
-using DotNet.Testcontainers.Containers.Builders;
-using DotNet.Testcontainers.Containers.Configurations.Databases;
-using DotNet.Testcontainers.Containers.Configurations.MessageBrokers;
-using DotNet.Testcontainers.Containers.Modules.Abstractions;
-using DotNet.Testcontainers.Containers.Modules.Databases;
-using DotNet.Testcontainers.Containers.Modules.MessageBrokers;
+
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Configurations;
+using DotNet.Testcontainers.Containers;
 using Xunit;
 
 namespace Evento.IntegrationTests;
