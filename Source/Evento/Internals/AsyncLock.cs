@@ -1,31 +1,22 @@
 namespace Evento.Internals;
 
-public sealed class AsyncLock : IDisposable
+internal sealed class AsyncLock : IDisposable
 {
     private readonly SemaphoreSlim semaphore;
     private readonly IDisposable releaser;
+    private readonly Task<IDisposable> releaserTask;
 
-    /// <summary>
-    ///     This is an internal API that supports the EasyNetQ infrastructure and not subject to
-    ///     the same compatibility as public APIs. It may be changed or removed without notice in
-    ///     any release. You should only use it directly in your code with extreme caution and knowing that
-    ///     doing so can result in application failures when updating to a new EasyNetQ release.
-    /// </summary>
     public AsyncLock()
     {
         semaphore = new SemaphoreSlim(1);
         releaser = new Releaser(semaphore);
+        releaserTask = Task.FromResult(releaser);
     }
 
-    /// <summary>
-    /// Acquires a lock
-    /// </summary>
-    /// <param name="cancellationToken">The cancellation token</param>
-    /// <returns>Releaser, which should be disposed to release a lock</returns>
-    public async Task<IDisposable> AcquireAsync(CancellationToken cancellationToken = default)
+    public Task<IDisposable> AcquireAsync(CancellationToken cancellationToken = default)
     {
-        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-        return releaser;
+        var acquireAsync = semaphore.WaitAsync(cancellationToken);
+        return acquireAsync.IsCompletedSuccessfully ? releaserTask : WaitForAcquireAsync(acquireAsync);
     }
 
     private sealed class Releaser : IDisposable
@@ -39,4 +30,10 @@ public sealed class AsyncLock : IDisposable
 
     /// <inheritdoc />
     public void Dispose() => semaphore.Dispose();
+
+    private async Task<IDisposable> WaitForAcquireAsync(Task acquireAsync)
+    {
+        await acquireAsync.ConfigureAwait(false);
+        return releaser;
+    }
 }
