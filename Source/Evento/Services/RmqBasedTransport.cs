@@ -75,7 +75,7 @@ public sealed class RmqBasedTransport : IPublishSubscribeTransport
                 await transportFunc(subscription, new Event(p.Type ?? ri.RoutingKey, b), c);
                 return AckStrategies.Ack;
             },
-            _ => {}
+            _ => { }
         );
 
         if (consumerPerSubscription.TryAdd(subscription.Id, new Consumer(bus, queue, bindings, consumer)))
