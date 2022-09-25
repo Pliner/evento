@@ -15,6 +15,14 @@ builder.Services.AddControllers();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHealthChecks();
 builder.Services.AddLogging(c => c.AddConsole());
+builder.Services.AddSingleton(s =>
+{
+    var configuration = s.GetRequiredService<IConfiguration>();
+    return new RmqBasedTransportOptions
+    {
+        ExchangeName = configuration["EXCHANGE_NAME"] ?? "events"
+    };
+});
 builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>();
 builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
 builder.Services.AddSingleton<IPublishSubscribeTransport, RmqBasedTransport>();

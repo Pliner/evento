@@ -7,22 +7,30 @@ using Evento.Repositories.Subscription;
 
 namespace Evento.Services;
 
-public class RmqBasedTransport : IPublishSubscribeTransport
+public sealed record RmqBasedTransportOptions(string ExchangeName = "events");
+
+public sealed class RmqBasedTransport : IPublishSubscribeTransport
 {
-    private const string ExchangeName = "events";
-
     private readonly IAdvancedBus bus;
-
-    private readonly ConcurrentDictionary<string, Exchange> exchanges = new();
 
     private readonly ConcurrentDictionary<Guid, Consumer> consumerPerSubscription = new();
     private readonly AsyncLock mutex = new();
+    private readonly AsyncLazy<Exchange> lazyExchange;
 
-    public RmqBasedTransport(IAdvancedBus bus) => this.bus = bus;
+    public RmqBasedTransport(IAdvancedBus bus, RmqBasedTransportOptions options)
+    {
+        this.bus = bus;
+
+        lazyExchange = new AsyncLazy<Exchange>(
+            c => bus.ExchangeDeclareAsync(
+                options.ExchangeName, x => x.WithType(ExchangeType.Topic).AsDurable(true), c
+            )
+        );
+    }
 
     public async Task PublishAsync(Event @event, CancellationToken cancellationToken = default)
     {
-        var exchange = await EnsureExchangeDeclaredAsync(ExchangeName, cancellationToken);
+        var exchange = await lazyExchange.GetAsync(cancellationToken).ConfigureAwait(false);
         var properties = new MessageProperties
         {
             Type = @event.Type,
@@ -48,7 +56,7 @@ public class RmqBasedTransport : IPublishSubscribeTransport
         if (consumerPerSubscription.ContainsKey(subscription.Id))
             return;
 
-        var exchange = await EnsureExchangeDeclaredAsync(ExchangeName, cancellationToken);
+        var exchange = await lazyExchange.GetAsync(cancellationToken).ConfigureAwait(false);
         var queue = await bus.QueueDeclareAsync(
             $"{subscription.Name}:{subscription.Version}",
             x => x.WithQueueType(QueueType.Quorum)
@@ -90,27 +98,18 @@ public class RmqBasedTransport : IPublishSubscribeTransport
         var wasShutdown = await consumer.ShutdownAsync(cancellationToken);
         if (!wasShutdown) return false;
 
-        consumerPerSubscription.Remove(subscriptionId);
+        consumerPerSubscription.TryRemove(subscriptionId, out var _);
         return true;
     }
 
     public void Dispose()
     {
-        exchanges.Clear();
         consumerPerSubscription.ClearAndDispose();
+        mutex.Dispose();
+        lazyExchange.Dispose();
     }
 
-    private async Task<Exchange> EnsureExchangeDeclaredAsync(string exchangeName, CancellationToken cancellationToken)
-    {
-        if (exchanges.TryGetValue(exchangeName, out var exchange))
-            return exchange;
-
-        exchange = await bus.ExchangeDeclareAsync(exchangeName, x => x.WithType(ExchangeType.Topic), cancellationToken);
-        exchanges.TryAdd(exchangeName, exchange);
-        return exchange;
-    }
-
-    private class Consumer : IDisposable
+    private sealed class Consumer : IDisposable
     {
         private readonly IAdvancedBus bus;
         private readonly Queue queue;
