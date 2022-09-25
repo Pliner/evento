@@ -53,7 +53,9 @@ builder.Services.RegisterEasyNetQ(
             { "username", configuration["RABBITMQ_USER"] ?? "guest" },
             { "password", configuration["RABBITMQ_PASSWORD"] ?? "guest" },
             { "virtualHost", configuration["RABBITMQ_VHOST"] ?? "/" },
-            { "publisherConfirms", "True" }
+            { "publisherConfirms", "True" },
+            { "consumerDispatcherConcurrency", "1"},
+            { "prefetchCount", "50"}
         };
         var connectionString = string.Join(";", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);

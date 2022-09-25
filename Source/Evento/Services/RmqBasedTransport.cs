@@ -70,12 +70,12 @@ public sealed class RmqBasedTransport : IPublishSubscribeTransport
 
         var consumer = bus.Consume(
             queue,
-            async (b, p, _, c) =>
+            async (b, p, ri, c) =>
             {
-                await transportFunc(subscription, new Event(p.Type, b), c);
+                await transportFunc(subscription, new Event(p.Type ?? ri.RoutingKey, b), c);
                 return AckStrategies.Ack;
             },
-            c => c.WithPrefetchCount(50)
+            _ => {}
         );
 
         if (consumerPerSubscription.TryAdd(subscription.Id, new Consumer(bus, queue, bindings, consumer)))
