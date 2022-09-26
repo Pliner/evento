@@ -37,7 +37,7 @@ public sealed class RmqBasedTransport : IPublishSubscribeTransport
             ContentType = "application/octet-stream",
             DeliveryMode = MessageDeliveryMode.Persistent
         };
-        await bus.PublishAsync(exchange, @event.Type, true, properties, @event.Payload, cancellationToken);
+        await bus.PublishAsync(exchange, @event.Type, false, properties, @event.Payload, cancellationToken);
     }
 
     public IReadOnlySet<Guid> ActiveSubscriptions => consumerPerSubscription.Keys.ToHashSet();
@@ -70,12 +70,7 @@ public sealed class RmqBasedTransport : IPublishSubscribeTransport
 
         var consumer = bus.Consume(
             queue,
-            async (b, p, ri, c) =>
-            {
-                await transportFunc(subscription, new Event(p.Type ?? ri.RoutingKey, b), c);
-                return AckStrategies.Ack;
-            },
-            _ => { }
+            async (b, p, ri, c) => await transportFunc(subscription, new Event(p.Type ?? ri.RoutingKey, b), c)
         );
 
         if (consumerPerSubscription.TryAdd(subscription.Id, new Consumer(bus, queue, bindings, consumer)))
