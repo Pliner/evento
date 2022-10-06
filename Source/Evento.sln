@@ -2,8 +2,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento", "Evento\Evento.csproj", "{18BF8218-E391-4307-8A68-2627A37A17A6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.IntegrationTests", "Evento.IntegrationTests\Evento.IntegrationTests.csproj", "{58D94270-2040-4A66-B7B0-5F34470494C0}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{DE1CDF0E-5185-4987-B72C-1D6E4B1924F5}"
 	ProjectSection(SolutionItems) = preProject
 		docker-compose.yml = docker-compose.yml
@@ -12,8 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Makefile = Makefile
 		..\.github\workflows\ci.yml = ..\.github\workflows\ci.yml
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.UnitTests", "Evento.UnitTests\Evento.UnitTests.csproj", "{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Evento.Client", "Evento.Client\Evento.Client.csproj", "{4D13DA5D-0880-4013-8122-D7E67E50E403}"
 EndProject
@@ -27,14 +23,6 @@ Global
 		{18BF8218-E391-4307-8A68-2627A37A17A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{18BF8218-E391-4307-8A68-2627A37A17A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{18BF8218-E391-4307-8A68-2627A37A17A6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{58D94270-2040-4A66-B7B0-5F34470494C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{58D94270-2040-4A66-B7B0-5F34470494C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{58D94270-2040-4A66-B7B0-5F34470494C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{58D94270-2040-4A66-B7B0-5F34470494C0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DE88AB81-ED60-4BB7-9EEB-D67E6DE9B8F2}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4D13DA5D-0880-4013-8122-D7E67E50E403}.Release|Any CPU.ActiveCfg = Release|Any CPU

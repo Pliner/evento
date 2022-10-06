@@ -15,7 +15,7 @@ public class SubscriptionsController : ControllerBase
     [HttpPost]
     public async Task AddAsync([FromBody] NewSubscriptionDto subscription, CancellationToken cancellationToken)
     {
-        var existingSubscription = await subscriptionRepository.GetLastVersionByNameAsync(subscription.Name, cancellationToken);
+        var existingSubscription = await subscriptionRepository.TryGetByNameAsync(subscription.Name, cancellationToken);
 
         if (
             existingSubscription != null
@@ -25,27 +25,37 @@ public class SubscriptionsController : ControllerBase
         )
             return;
 
-        var newSubscription = new Subscription
+        var newSubscription = new NewSubscriptionData
         (
-            Id: Guid.NewGuid(),
             Name: subscription.Name,
             Version: (existingSubscription?.Version ?? 0) + 1,
-            CreatedAt: DateTimeOffset.UtcNow,
-            Types: subscription.Types,
-            Endpoint: subscription.Endpoint,
-            Active: true
+            Types: subscription.Types.ToHashSet(),
+            Endpoint: subscription.Endpoint
         );
-        await subscriptionRepository.InsertAsync(newSubscription, cancellationToken);
+        await subscriptionRepository.AddAsync(newSubscription, cancellationToken);
     }
 
     [HttpGet]
-    public async Task<SubscriptionDto[]> GetSubscriptionsAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<string>> SelectNamesAsync(CancellationToken cancellationToken)
     {
-        var subscriptions = await subscriptionRepository.SelectActiveAsync(cancellationToken);
+        return await subscriptionRepository.SelectNamesAsync(cancellationToken);
+    }
 
-        return subscriptions
-            .GroupBy(x => x.Name, x => x, (_, items) => items.MaxBy(x => x.Version)!)
-            .Select(x => new SubscriptionDto(x.Name, x.CreatedAt, x.Types, x.Endpoint))
-            .ToArray();
+    [HttpGet("{subscriptionName}")]
+    public async Task<SubscriptionDto?> TryGetByNameAsync([FromRoute] string subscriptionName, CancellationToken cancellationToken)
+    {
+        var subscription = await subscriptionRepository.TryGetByNameAsync(subscriptionName, cancellationToken);
+        if (subscription == null) return null;
+
+        return new SubscriptionDto(subscription.Name, subscription.Types.ToArray(), subscription.Endpoint, subscription.Active);
+    }
+
+    [HttpDelete("{subscriptionName}")]
+    public async Task SetNotActiveAsync([FromRoute] string subscriptionName, CancellationToken cancellationToken)
+    {
+        var subscription = await subscriptionRepository.TryGetByNameAsync(subscriptionName, cancellationToken);
+        if (subscription is not { Active: true }) return;
+
+        await subscriptionRepository.SetNotActiveAsync(subscription, cancellationToken);
     }
 }

@@ -23,10 +23,10 @@ builder.Services.AddSingleton(s =>
         ExchangeName = configuration["EXCHANGE_NAME"] ?? "events"
     };
 });
-builder.Services.AddSingleton<ISubscriptionRepository, DbSubscriptionRepository>();
+builder.Services.AddSingleton<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
-builder.Services.AddSingleton<IPublishSubscribeTransport, RmqBasedTransport>();
-builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(120))
+builder.Services.AddSingleton<IPublishSubscribe, RmqBasedPublishSubscribe>();
+builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(60))
     .AddPolicyHandler(
         HttpPolicyExtensions
             .HandleTransientHttpError()
@@ -35,12 +35,12 @@ builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Time
                     medianFirstRetryDelay: builder.Environment.IsProduction()
                         ? TimeSpan.FromSeconds(1)
                         : TimeSpan.FromSeconds(0.1),
-                    retryCount: 5,
+                    retryCount: 3,
                     fastFirst: true
                 )
             )
     )
-    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(20)))
+    .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(builder.Environment.IsProduction() ? TimeSpan.FromSeconds(10) : TimeSpan.FromSeconds(1)))
     .UseHttpClientMetrics();
 builder.Services.AddSingleton<IMetricFactory>(Metrics.WithCustomRegistry(Metrics.DefaultRegistry));
 builder.Services.RegisterEasyNetQ(
@@ -54,8 +54,8 @@ builder.Services.RegisterEasyNetQ(
             { "password", configuration["RABBITMQ_PASSWORD"] ?? "guest" },
             { "virtualHost", configuration["RABBITMQ_VHOST"] ?? "/" },
             { "publisherConfirms", "True" },
-            { "consumerDispatcherConcurrency", "1"},
-            { "prefetchCount", "50"}
+            { "consumerDispatcherConcurrency", "1" },
+            { "prefetchCount", "50" }
         };
         var connectionString = string.Join(";", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);

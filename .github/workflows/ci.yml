@@ -38,10 +38,6 @@ jobs:
       run: dotnet format --no-restore --verify-no-changes --severity warn ./Source/Evento.sln || (echo "Run 'dotnet format' to fix issues" && exit 1)
     - name: Build
       run: dotnet build ${{ github.workspace }}/Source/Evento.sln --configuration Release
-    - name: UnitTests
-      run: |
-        cd ${{ github.workspace }}/Source/Evento.UnitTests
-        dotnet test --configuration Release --no-build
 
   publish-to-github-docker-registry:
     name: Publish To Github Docker Registry

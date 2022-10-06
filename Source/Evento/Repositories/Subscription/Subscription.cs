@@ -1,11 +1,10 @@
 namespace Evento.Repositories.Subscription;
 
-public record Subscription(
-    Guid Id,
+public sealed record Subscription(
     string Name,
     int Version,
-    DateTimeOffset CreatedAt,
-    string[] Types,
+    IReadOnlySet<string> Types,
+    IReadOnlySet<string> DeletedTypes,
     string Endpoint,
-    bool Active = true
+    bool Active
 );

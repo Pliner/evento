@@ -8,19 +8,18 @@ namespace Evento.Controllers;
 [Route("api/events")]
 public class EventController : ControllerBase
 {
-    private readonly IPublishSubscribeTransport publishSubscribeTransport;
+    private readonly IPublishSubscribe publishSubscribe;
 
-    public EventController(IPublishSubscribeTransport publishSubscribeTransport) => this.publishSubscribeTransport = publishSubscribeTransport;
+    public EventController(IPublishSubscribe publishSubscribe) => this.publishSubscribe = publishSubscribe;
 
     [HttpPost]
-    public async Task SaveAsync(
-        [FromQuery] string type, CancellationToken cancellationToken
-    )
+    public async Task PublishAsync([FromQuery] string type, CancellationToken cancellationToken)
     {
         await using var stream = new ArrayPooledMemoryStream();
         await Request.Body.CopyToAsync(stream, cancellationToken);
 
-        var @event = new Event(type, stream.Memory);
-        await publishSubscribeTransport.PublishAsync(@event, cancellationToken);
+        var properties = new EventProperties(type, Request.ContentType ?? "application/json");
+        var readOnlyMemory = stream.Memory;
+        await publishSubscribe.PublishAsync(properties, readOnlyMemory, cancellationToken);
     }
 }

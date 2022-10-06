@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Evento.Repositories.Subscription;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -9,14 +10,18 @@ public sealed class HttpBasedTransport : IDirectTransport
 
     public HttpBasedTransport(HttpClient httpClient) => this.httpClient = httpClient;
 
-    public async Task SendAsync(Subscription subscription, Event @event, CancellationToken cancellationToken = default)
+    public async Task SendAsync(
+        Subscription subscription,
+        EventProperties properties,
+        ReadOnlyMemory<byte> payload,
+        CancellationToken cancellationToken = default
+    )
     {
-        var parameters = new Dictionary<string, string?>
-        {
-            { "type", @event.Type },
-        };
-        using var payload = new ReadOnlyMemoryContent(@event.Payload);
-        using var response = await httpClient.PostAsync(QueryHelpers.AddQueryString(subscription.Endpoint, parameters), payload, cancellationToken);
+        using var content = new ReadOnlyMemoryContent(payload);
+        content.Headers.ContentType = new MediaTypeHeaderValue(properties.ContentType);
+
+        var uri = QueryHelpers.AddQueryString(subscription.Endpoint, new Dictionary<string, string?> { { "type", properties.Type } });
+        using var response = await httpClient.PostAsync(uri, content, cancellationToken);
         response.EnsureSuccessStatusCode();
     }
 }

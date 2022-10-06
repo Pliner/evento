@@ -1,12 +1,42 @@
 name: evento
 
 services:
-  evento:
+  evento_1:
     build:
       context: .
     image: evento
     ports:
-      - "8000:8000"
+      - "8001:8000"
+    restart: always
+    depends_on:
+      pg:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+      rmq:
+        condition: service_healthy
+
+  evento_2:
+    build:
+      context: .
+    image: evento
+    ports:
+      - "8002:8000"
+    restart: always
+    depends_on:
+      pg:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+      rmq:
+        condition: service_healthy
+
+  evento_3:
+    build:
+      context: .
+    image: evento
+    ports:
+      - "8003:8000"
     restart: always
     depends_on:
       pg:
@@ -25,7 +55,7 @@ services:
       - pg
 
   rmq:
-    image: "rabbitmq:3.10-management"
+    image: "rabbitmq:3-management"
     ports:
       - "5672:5672"
       - "15672:15672"

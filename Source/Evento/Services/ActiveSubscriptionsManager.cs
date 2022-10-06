@@ -4,12 +4,12 @@ using Prometheus;
 
 namespace Evento.Services;
 
-public class ActiveSubscriptionsManager : IPeriodicJob
+public sealed class ActiveSubscriptionsManager : IPeriodicJob
 {
     private readonly ILogger<ActiveSubscriptionsManager> logger;
     private readonly ISubscriptionRepository subscriptionRepository;
     private readonly IDirectTransport transport;
-    private readonly IPublishSubscribeTransport publishSubscribeTransport;
+    private readonly IPublishSubscribe publishSubscribe;
     private readonly Counter failedEventsCounter;
     private readonly Counter totalEventsCounter;
 
@@ -17,14 +17,14 @@ public class ActiveSubscriptionsManager : IPeriodicJob
         ILogger<ActiveSubscriptionsManager> logger,
         ISubscriptionRepository subscriptionRepository,
         IDirectTransport transport,
-        IPublishSubscribeTransport publishSubscribeTransport,
+        IPublishSubscribe publishSubscribe,
         IMetricFactory metricsFactory
     )
     {
         this.logger = logger;
         this.subscriptionRepository = subscriptionRepository;
         this.transport = transport;
-        this.publishSubscribeTransport = publishSubscribeTransport;
+        this.publishSubscribe = publishSubscribe;
 
         failedEventsCounter = metricsFactory.CreateCounter(
             "evento_events_sent_failures",
@@ -39,57 +39,57 @@ public class ActiveSubscriptionsManager : IPeriodicJob
     }
 
     public string Name => "ActiveSubscriptionsManager";
+
     public TimeSpan Interval => TimeSpan.FromSeconds(5);
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        var activeSubscriptions = await subscriptionRepository.SelectActiveAsync(cancellationToken);
-        var staleSubscriptionsIds = publishSubscribeTransport.ActiveSubscriptions.ToHashSet();
+        var subscriptionsNames = await subscriptionRepository.SelectNamesAsync(cancellationToken);
+        var activeSubscriptions = publishSubscribe.ActiveSubscriptions;
 
-        foreach (var activeSubscription in activeSubscriptions)
+        foreach (var subscriptionName in subscriptionsNames)
         {
-            staleSubscriptionsIds.Remove(activeSubscription.Id);
-            await publishSubscribeTransport.SubscribeAsync(
-                activeSubscription,
-                async (s, e, c) =>
-                {
-                    try
-                    {
-                        await transport.SendAsync(s, e, c);
-                    }
-                    catch (OperationCanceledException) when (c.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                    catch (Exception exception)
-                    {
-                        logger.LogError(exception, "Failed to deliver event {EventType} to subscription {SubscriptionName}", e.Type, s.Id);
+            var subscription = await subscriptionRepository.TryGetByNameAsync(subscriptionName, cancellationToken);
+            if (subscription == null) continue;
 
-                        failedEventsCounter.Labels(e.Type, s.Name).Inc();
-                    }
-                    finally
-                    {
-                        totalEventsCounter.Labels(e.Type, s.Name).Inc();
-                    }
-                },
-                cancellationToken
-            );
+            if (subscription.Active)
+            {
+                if (activeSubscriptions.Contains(subscription.Name))
+                    await publishSubscribe.RefreshSubscriptionAsync(subscription, cancellationToken);
+                else
+                    await publishSubscribe.StartSubscriptionAsync(subscription, HandleEventAsync, cancellationToken);
+            }
+            else
+            {
+                await publishSubscribe.DeactivateSubscriptionAsync(subscription, cancellationToken);
+            }
+        }
+    }
+
+    private async Task<EventHandlerResult> HandleEventAsync(
+        Subscription subscription, EventProperties properties, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            await transport.SendAsync(subscription, properties, payload, cancellationToken);
+            return EventHandlerResult.Processed;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Failed to deliver event {EventType} to subscription {SubscriptionName}", properties.Type, subscription.Name);
+
+            failedEventsCounter.Labels(properties.Type, subscription.Name).Inc();
+        }
+        finally
+        {
+            totalEventsCounter.Labels(properties.Type, subscription.Name).Inc();
         }
 
-        var notLastActiveSubscription = activeSubscriptions
-            .GroupBy(
-                x => x.Name,
-                x => x,
-                (_, g) => g.OrderByDescending(x => x.Version).Select(x => x.Id).Skip(1)
-            )
-            .SelectMany(x => x);
-
-        foreach (var staleSubscriptionId in staleSubscriptionsIds.Concat(notLastActiveSubscription))
-        {
-            var wasUnregistered = await publishSubscribeTransport.UnsubscribeAsync(staleSubscriptionId, cancellationToken);
-            if (!wasUnregistered) continue;
-
-            await subscriptionRepository.DeactivateAsync(staleSubscriptionId, cancellationToken);
-        }
+        return EventHandlerResult.Failed;
     }
 }

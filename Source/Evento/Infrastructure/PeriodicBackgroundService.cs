@@ -1,13 +1,11 @@
 namespace Evento.Infrastructure;
 
-public class PeriodicBackgroundService<TJob> : BackgroundService where TJob : IPeriodicJob
+public sealed class PeriodicBackgroundService<TJob> : BackgroundService where TJob : IPeriodicJob
 {
     private readonly ILogger<PeriodicBackgroundService<TJob>> logger;
     private readonly TJob job;
 
-    public PeriodicBackgroundService(
-        ILogger<PeriodicBackgroundService<TJob>> logger, TJob job
-    )
+    public PeriodicBackgroundService(ILogger<PeriodicBackgroundService<TJob>> logger, TJob job)
     {
         this.logger = logger;
         this.job = job;
