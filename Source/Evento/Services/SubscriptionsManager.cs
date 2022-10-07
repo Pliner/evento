@@ -4,17 +4,17 @@ using Prometheus;
 
 namespace Evento.Services;
 
-public sealed class ActiveSubscriptionsManager : IPeriodicJob
+public sealed class SubscriptionsManager : IPeriodicJob
 {
-    private readonly ILogger<ActiveSubscriptionsManager> logger;
+    private readonly ILogger<SubscriptionsManager> logger;
     private readonly ISubscriptionRepository subscriptionRepository;
     private readonly IDirectTransport transport;
     private readonly IPublishSubscribe publishSubscribe;
     private readonly Counter failedEventsCounter;
     private readonly Counter totalEventsCounter;
 
-    public ActiveSubscriptionsManager(
-        ILogger<ActiveSubscriptionsManager> logger,
+    public SubscriptionsManager(
+        ILogger<SubscriptionsManager> logger,
         ISubscriptionRepository subscriptionRepository,
         IDirectTransport transport,
         IPublishSubscribe publishSubscribe,
@@ -38,31 +38,20 @@ public sealed class ActiveSubscriptionsManager : IPeriodicJob
         );
     }
 
-    public string Name => "ActiveSubscriptionsManager";
+    public string Name => "subscriptions-manager";
 
     public TimeSpan Interval => TimeSpan.FromSeconds(5);
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
         var subscriptionsNames = await subscriptionRepository.SelectNamesAsync(cancellationToken);
-        var activeSubscriptions = publishSubscribe.ActiveSubscriptions;
 
         foreach (var subscriptionName in subscriptionsNames)
         {
             var subscription = await subscriptionRepository.TryGetByNameAsync(subscriptionName, cancellationToken);
             if (subscription == null) continue;
 
-            if (subscription.Active)
-            {
-                if (activeSubscriptions.Contains(subscription.Name))
-                    await publishSubscribe.RefreshSubscriptionAsync(subscription, cancellationToken);
-                else
-                    await publishSubscribe.StartSubscriptionAsync(subscription, HandleEventAsync, cancellationToken);
-            }
-            else
-            {
-                await publishSubscribe.DeactivateSubscriptionAsync(subscription, cancellationToken);
-            }
+            await publishSubscribe.MaintainSubscriptionAsync(subscription, HandleEventAsync, cancellationToken);
         }
     }
 

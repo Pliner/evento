@@ -76,16 +76,9 @@ public class SubscriptionRepository : ISubscriptionRepository
         foreach (var entity in entities)
         {
             deletedTypes.UnionWith(types);
-            if (entity.Active)
-            {
-                deletedTypes.ExceptWith(entity.Types);
-                types = entity.Types.ToHashSet();
-            }
-            else
-            {
-                deletedTypes.UnionWith(entity.Types);
-                types.Clear();
-            }
+
+            deletedTypes.ExceptWith(entity.Types);
+            types = entity.Types.ToHashSet();
         }
 
         return new Subscription(name, entities[^1].Version, types, deletedTypes, entities[^1].Endpoint, entities[^1].Active);

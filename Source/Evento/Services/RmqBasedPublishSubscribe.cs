@@ -19,6 +19,8 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
     private readonly AsyncLock mutex = new();
     private readonly AsyncLazy<Exchange> lazyExchange;
     private readonly AsyncLazy<IReadOnlyDictionary<int, Exchange>> lazyRetryExchanges;
+    private readonly Func<Subscription, AsyncLazy<(Queue Queue, Queue FailedQueue)>> lazyQueueFunc;
+    private readonly ConcurrentDictionary<Subscription, AsyncLazy<(Queue Queue, Queue FailedQueue)>> lazyQueues;
 
     public RmqBasedPublishSubscribe(IAdvancedBus bus, RmqBasedTransportOptions options)
     {
@@ -33,6 +35,7 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
                     options.ExchangeName, x => x.WithType(ExchangeType.Topic).AsDurable(true), c
                 );
             });
+
         lazyRetryExchanges = new AsyncLazy<IReadOnlyDictionary<int, Exchange>>(
             async ct =>
             {
@@ -63,6 +66,21 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
                 return retryExchanges;
             }
         );
+        lazyQueues = new ConcurrentDictionary<Subscription, AsyncLazy<(Queue Queue, Queue FailedQueue)>>();
+        lazyQueueFunc = s => new AsyncLazy<(Queue Queue, Queue FailedQueue)>(async ct =>
+        {
+            var queue = await bus.QueueDeclareAsync(
+                s.GetQueueName(),
+                x => x.WithQueueType(QueueType.Quorum).WithOverflowType(OverflowType.RejectPublish).AsDurable(true),
+                ct
+            );
+            var failedQueue = await bus.QueueDeclareAsync(
+                s.GetFailedQueueName(),
+                x => x.WithQueueType(QueueType.Quorum).WithOverflowType(OverflowType.RejectPublish).AsDurable(true),
+                ct
+            );
+            return (queue, failedQueue);
+        });
     }
 
     public async Task PublishAsync(EventProperties properties, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default)
@@ -72,78 +90,10 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
         await bus.PublishAsync(exchange, properties.Type, false, messageProperties, payload, cancellationToken);
     }
 
-    public IReadOnlySet<string> ActiveSubscriptions => consumerPerSubscription.Keys.ToHashSet();
-
-    public async Task StartSubscriptionAsync(
+    public async Task MaintainSubscriptionAsync(
         Subscription subscription, EventHandlerDelegate eventHandlerDelegate, CancellationToken cancellationToken = default
     )
     {
-        if (consumerPerSubscription.ContainsKey(subscription.Name))
-            throw new InvalidOperationException($"Subscription {subscription.Name} has already made");
-
-        using var _ = await mutex.AcquireAsync(cancellationToken);
-
-        if (consumerPerSubscription.ContainsKey(subscription.Name))
-            throw new InvalidOperationException($"Subscription {subscription.Name} has already made");
-
-        var exchange = await lazyExchange.GetAsync(cancellationToken).ConfigureAwait(false);
-        var queue = await bus.QueueDeclareAsync(
-            subscription.GetQueueName(),
-            x => x
-                .WithQueueType(QueueType.Quorum)
-                .WithOverflowType(OverflowType.RejectPublish)
-                .AsDurable(true),
-            cancellationToken
-        );
-        var failedQueue = await bus.QueueDeclareAsync(
-            subscription.GetFailedQueueName(),
-            x => x
-                .WithQueueType(QueueType.Quorum)
-                .WithOverflowType(OverflowType.RejectPublish)
-                .AsDurable(true),
-            cancellationToken
-        );
-
-        foreach (var type in subscription.Types)
-            await bus.QueueBindAsync(queue.Name, exchange.Name, type, null, cancellationToken);
-
-        foreach (var type in subscription.DeletedTypes)
-            await bus.QueueUnbindAsync(queue.Name, exchange.Name, type, null, cancellationToken);
-
-        subscriptions[subscription.Name] = subscription;
-        var consumer = bus.Consume(
-            queue, GetMessageHandlerFunc(subscription.Name, eventHandlerDelegate, queue, failedQueue)
-        );
-        consumerPerSubscription[subscription.Name] = consumer;
-    }
-
-    public async Task RefreshSubscriptionAsync(Subscription subscription, CancellationToken cancellationToken = default)
-    {
-        if (!subscription.Active) throw new ArgumentOutOfRangeException(nameof(subscription), subscription, null);
-
-        if (!subscriptions.TryGetValue(subscription.Name, out var existentSubscription)) return;
-        if (existentSubscription.Version >= subscription.Version) return;
-
-        using var _ = await mutex.AcquireAsync(cancellationToken);
-
-        if (!subscriptions.TryGetValue(subscription.Name, out existentSubscription)) return;
-        if (existentSubscription.Version >= subscription.Version) return;
-
-        var exchange = await lazyExchange.GetAsync(cancellationToken);
-
-        foreach (var type in subscription.Types)
-            await bus.QueueBindAsync(subscription.GetQueueName(), exchange.Name, type, null, cancellationToken);
-
-        foreach (var type in subscription.DeletedTypes)
-            await bus.QueueUnbindAsync(subscription.GetQueueName(), exchange.Name, type, null, cancellationToken);
-
-        subscriptions[subscription.Name] = subscription;
-    }
-
-    public async Task DeactivateSubscriptionAsync(Subscription subscription, CancellationToken cancellationToken = default)
-    {
-        if (subscription.Active) throw new ArgumentOutOfRangeException(nameof(subscription), subscription, null);
-
         if (subscriptions.TryGetValue(subscription.Name, out var existentSubscription) && existentSubscription.Version >= subscription.Version)
             return;
 
@@ -152,14 +102,34 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
         if (subscriptions.TryGetValue(subscription.Name, out existentSubscription) && existentSubscription.Version >= subscription.Version)
             return;
 
-        var exchange = await lazyExchange.GetAsync(cancellationToken);
-        foreach (var type in subscription.DeletedTypes)
-            await bus.QueueUnbindAsync(subscription.GetQueueName(), exchange.Name, type, null, cancellationToken);
+        var exchange = await lazyExchange.GetAsync(cancellationToken).ConfigureAwait(false);
 
-        if (consumerPerSubscription.TryGetValue(subscription.Name, out var consumer))
+        if (subscription.Active)
         {
-            consumer.Dispose();
-            consumerPerSubscription.TryRemove(subscription.Name, out consumer);
+            var (queue, failedQueue) = await lazyQueues.GetOrAdd(subscription, lazyQueueFunc).GetAsync(cancellationToken);
+
+            foreach (var type in subscription.Types)
+                await bus.QueueBindAsync(subscription.GetQueueName(), exchange.Name, type, null, cancellationToken);
+
+            foreach (var type in subscription.DeletedTypes)
+                await bus.QueueUnbindAsync(subscription.GetQueueName(), exchange.Name, type, null, cancellationToken);
+
+            if (!consumerPerSubscription.ContainsKey(subscription.Name))
+            {
+                var consumer = bus.Consume(queue, GetMessageHandlerFunc(subscription.Name, eventHandlerDelegate, queue, failedQueue));
+                consumerPerSubscription[subscription.Name] = consumer;
+            }
+        }
+        else
+        {
+            foreach (var type in subscription.DeletedTypes.Concat(subscription.Types))
+                await bus.QueueUnbindAsync(subscription.GetQueueName(), exchange.Name, type, null, cancellationToken);
+
+            if (consumerPerSubscription.TryGetValue(subscription.Name, out var consumer))
+            {
+                consumer.Dispose();
+                consumerPerSubscription.TryRemove(subscription.Name, out var _);
+            }
         }
 
         subscriptions[subscription.Name] = subscription;

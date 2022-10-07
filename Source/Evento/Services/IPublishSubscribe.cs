@@ -19,11 +19,5 @@ public interface IPublishSubscribe : IDisposable
 {
     Task PublishAsync(EventProperties properties, ReadOnlyMemory<byte> payload, CancellationToken cancellationToken = default);
 
-    IReadOnlySet<string> ActiveSubscriptions { get; }
-
-    Task StartSubscriptionAsync(Subscription subscription, EventHandlerDelegate transportFunc, CancellationToken cancellationToken = default);
-
-    Task RefreshSubscriptionAsync(Subscription subscription, CancellationToken cancellationToken = default);
-
-    Task DeactivateSubscriptionAsync(Subscription subscription, CancellationToken cancellationToken = default);
+    Task MaintainSubscriptionAsync(Subscription subscription, EventHandlerDelegate transportFunc, CancellationToken cancellationToken = default);
 }

@@ -64,7 +64,7 @@ builder.Services.RegisterEasyNetQ(
         .EnableNewtonsoftJson()
         .EnableAlwaysNackWithRequeueConsumerErrorStrategy()
 );
-builder.Services.AddPeriodicJob<ActiveSubscriptionsManager>();
+builder.Services.AddPeriodicJob<SubscriptionsManager>();
 builder.Services.AddDbContextFactory<EventoDbContext>(
     (s, o) => o.SetupPostgresql(s.GetRequiredService<IConfiguration>())
 );
