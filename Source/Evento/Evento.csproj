@@ -11,6 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="DistributedLock.Postgres" Version="1.0.3" />
       <PackageReference Include="EasyNetQ" Version="8.0.0-alpha5" />
       <PackageReference Include="EasyNetQ.DI.Microsoft" Version="8.0.0-alpha5" />
       <PackageReference Include="EasyNetQ.Logging.Microsoft" Version="8.0.0-alpha5" />

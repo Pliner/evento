@@ -135,10 +135,18 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
         subscriptions[subscription.Name] = subscription;
     }
 
+    public async Task InterruptSubscriptionsAsync(CancellationToken cancellationToken = default)
+    {
+        using var _ = await mutex.AcquireAsync(cancellationToken);
+
+        consumerPerSubscription.ClearAndDispose();
+        subscriptions.Clear();
+    }
+
     public void Dispose()
     {
-        subscriptions.Clear();
         consumerPerSubscription.ClearAndDispose();
+        subscriptions.Clear();
         mutex.Dispose();
         lazyRetryExchanges.Dispose();
         lazyExchange.Dispose();

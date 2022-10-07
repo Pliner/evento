@@ -1,10 +1,15 @@
-using Evento.Infrastructure;
+using Evento.Internals;
 using Evento.Repositories.Subscription;
 using Prometheus;
 
 namespace Evento.Services;
 
-public sealed class SubscriptionsManager : IPeriodicJob
+public interface ISubscriptionsManager
+{
+    Task RunAsync(CancellationToken cancellationToken = default);
+}
+
+public sealed class SubscriptionsManager : ISubscriptionsManager
 {
     private readonly ILogger<SubscriptionsManager> logger;
     private readonly ISubscriptionRepository subscriptionRepository;
@@ -38,20 +43,33 @@ public sealed class SubscriptionsManager : IPeriodicJob
         );
     }
 
-    public string Name => "subscriptions-manager";
-
-    public TimeSpan Interval => TimeSpan.FromSeconds(5);
-
-    public async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    public async Task RunAsync(CancellationToken cancellationToken = default)
     {
-        var subscriptionsNames = await subscriptionRepository.SelectNamesAsync(cancellationToken);
+        // ReSharper disable once MethodSupportsCancellation
+        await using var _ = AsyncDisposableActions.Create(() => publishSubscribe.InterruptSubscriptionsAsync());
 
-        foreach (var subscriptionName in subscriptionsNames)
+        while (true)
         {
-            var subscription = await subscriptionRepository.TryGetByNameAsync(subscriptionName, cancellationToken);
-            if (subscription == null) continue;
+            cancellationToken.ThrowIfCancellationRequested();
 
-            await publishSubscribe.MaintainSubscriptionAsync(subscription, HandleEventAsync, cancellationToken);
+            try
+            {
+                var subscriptionsNames = await subscriptionRepository.SelectNamesAsync(cancellationToken);
+
+                foreach (var subscriptionName in subscriptionsNames)
+                {
+                    var subscription = await subscriptionRepository.TryGetByNameAsync(subscriptionName, cancellationToken);
+                    if (subscription == null) continue;
+
+                    await publishSubscribe.MaintainSubscriptionAsync(subscription, HandleEventAsync, cancellationToken);
+                }
+            }
+            catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
+            {
+                logger.LogError(exception, "Failed to maintain subscriptions");
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
         }
     }
 
