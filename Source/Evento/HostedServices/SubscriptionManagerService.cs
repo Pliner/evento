@@ -3,26 +3,26 @@ using Medallion.Threading;
 
 namespace Evento.HostedServices;
 
-public class SubscriptionsManagerService : BackgroundService
+public class SubscriptionManagerService : BackgroundService
 {
-    private readonly ILogger<SubscriptionsManagerService> logger;
-    private readonly ISubscriptionsManager subscriptionsManager;
+    private readonly ILogger<SubscriptionManagerService> logger;
+    private readonly ISubscriptionManager subscriptionManager;
     private readonly IDistributedLockProvider distributedLockProvider;
 
-    public SubscriptionsManagerService(
-        ILogger<SubscriptionsManagerService> logger,
-        ISubscriptionsManager subscriptionsManager,
+    public SubscriptionManagerService(
+        ILogger<SubscriptionManagerService> logger,
+        ISubscriptionManager subscriptionManager,
         IDistributedLockProvider distributedLockProvider
     )
     {
         this.logger = logger;
-        this.subscriptionsManager = subscriptionsManager;
+        this.subscriptionManager = subscriptionManager;
         this.distributedLockProvider = distributedLockProvider;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var distributedLock = distributedLockProvider.CreateLock("subscriptions-manager");
+        var distributedLock = distributedLockProvider.CreateLock("subscription-manager");
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -32,7 +32,7 @@ public class SubscriptionsManagerService : BackgroundService
 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, handle.HandleLostToken);
 
-                await subscriptionsManager.RunAsync(cts.Token);
+                await subscriptionManager.RunAsync(cts.Token);
             }
             catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
             {

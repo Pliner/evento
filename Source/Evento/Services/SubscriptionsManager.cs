@@ -4,22 +4,22 @@ using Prometheus;
 
 namespace Evento.Services;
 
-public interface ISubscriptionsManager
+public interface ISubscriptionManager
 {
     Task RunAsync(CancellationToken cancellationToken = default);
 }
 
-public sealed class SubscriptionsManager : ISubscriptionsManager
+public sealed class SubscriptionManager : ISubscriptionManager
 {
-    private readonly ILogger<SubscriptionsManager> logger;
+    private readonly ILogger<SubscriptionManager> logger;
     private readonly ISubscriptionRepository subscriptionRepository;
     private readonly IDirectTransport transport;
     private readonly IPublishSubscribe publishSubscribe;
     private readonly Counter failedEventsCounter;
     private readonly Counter totalEventsCounter;
 
-    public SubscriptionsManager(
-        ILogger<SubscriptionsManager> logger,
+    public SubscriptionManager(
+        ILogger<SubscriptionManager> logger,
         ISubscriptionRepository subscriptionRepository,
         IDirectTransport transport,
         IPublishSubscribe publishSubscribe,

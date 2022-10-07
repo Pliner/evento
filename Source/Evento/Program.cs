@@ -36,7 +36,7 @@ builder.Services.AddSingleton(s =>
 builder.Services.AddSingleton<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
 builder.Services.AddSingleton<IPublishSubscribe, RmqBasedPublishSubscribe>();
-builder.Services.AddSingleton<ISubscriptionsManager, SubscriptionsManager>();
+builder.Services.AddSingleton<ISubscriptionManager, SubscriptionManager>();
 builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(60))
     .AddPolicyHandler(
         HttpPolicyExtensions
@@ -80,7 +80,7 @@ builder.Services.AddSingleton<IDistributedLockProvider>(c =>
     var configuration = c.GetRequiredService<IConfiguration>();
     return new PostgresDistributedSynchronizationProvider(configuration.GetPostgresqlConnectionString(), x => x.KeepaliveCadence(TimeSpan.FromSeconds(60)));
 });
-builder.Services.AddHostedService<SubscriptionsManagerService>();
+builder.Services.AddHostedService<SubscriptionManagerService>();
 builder.Services.AddDbContextFactory<EventoDbContext>(
     (s, o) => o.SetupPostgresql(s.GetRequiredService<IConfiguration>())
 );
