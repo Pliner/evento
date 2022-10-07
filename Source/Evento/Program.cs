@@ -58,7 +58,7 @@ builder.Services.RegisterEasyNetQ(
             { "virtualHost", configuration["RABBITMQ_VHOST"] ?? "/" },
             { "publisherConfirms", "True" },
             { "consumerDispatcherConcurrency", "1" },
-            { "prefetchCount", "50" }
+            { "prefetchCount", "10" }
         };
         var connectionString = string.Join(";", parameters.Select(kvp => $"{kvp.Key}={kvp.Value}"));
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);
