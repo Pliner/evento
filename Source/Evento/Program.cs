@@ -70,14 +70,7 @@ builder.Services.RegisterEasyNetQ(
 builder.Services.AddSingleton<IDistributedLockProvider>(c =>
 {
     var configuration = c.GetRequiredService<IConfiguration>();
-    var host = configuration["POSTGRES_HOST"] ?? "pg";
-    var port = configuration["POSTGRES_PORT"] ?? "5432";
-    var user = configuration["POSTGRES_USER"] ?? "postgres";
-    var database = configuration["POSTGRES_DATABASE"] ?? "postgres";
-    var password = configuration["POSTGRES_PASSWORD"] ?? "some_secret";
-    var connectionString =
-        $"User Id={user};Host={host};Port={port};Database={database};Password={password};Pooling=true;";
-    return new PostgresDistributedSynchronizationProvider(connectionString, x => x.KeepaliveCadence(TimeSpan.FromSeconds(60)));
+    return new PostgresDistributedSynchronizationProvider(configuration.GetPostgresqlConnectionString(), x => x.KeepaliveCadence(TimeSpan.FromSeconds(60)));
 });
 builder.Services.AddHostedService<SubscriptionsManagerService>();
 builder.Services.AddDbContextFactory<EventoDbContext>(

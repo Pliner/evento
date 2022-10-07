@@ -4,7 +4,7 @@ namespace Evento.Db;
 
 public static class DbContextOptionsBuilderExtensions
 {
-    public static TBuilder SetupPostgresql<TBuilder>(this TBuilder builder, IConfiguration configuration) where TBuilder : DbContextOptionsBuilder
+    public static string GetPostgresqlConnectionString(this IConfiguration configuration)
     {
         var host = configuration["POSTGRES_HOST"] ?? "pg";
         var port = configuration["POSTGRES_PORT"] ?? "5432";
@@ -13,7 +13,12 @@ public static class DbContextOptionsBuilderExtensions
         var password = configuration["POSTGRES_PASSWORD"] ?? "some_secret";
         var connectionString =
             $"User Id={user};Host={host};Port={port};Database={database};Password={password};Pooling=true;";
-        builder.UseNpgsql(connectionString);
+        return connectionString;
+    }
+
+    public static TBuilder SetupPostgresql<TBuilder>(this TBuilder builder, IConfiguration configuration) where TBuilder : DbContextOptionsBuilder
+    {
+        builder.UseNpgsql(configuration.GetPostgresqlConnectionString());
         builder.UseSnakeCaseNamingConvention();
         return builder;
     }
