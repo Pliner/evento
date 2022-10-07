@@ -32,10 +32,10 @@ builder.Services.AddSingleton(s =>
     };
 });
 builder.Services.AddSingleton<ISubscriptionRepository, SubscriptionRepository>();
-builder.Services.AddSingleton<IDirectTransport, HttpBasedTransport>();
+builder.Services.AddSingleton<IEventTransport, HttpBasedEventTransport>();
 builder.Services.AddSingleton<IPublishSubscribe, RmqBasedPublishSubscribe>();
 builder.Services.AddSingleton<ISubscriptionManager, SubscriptionManager>();
-builder.Services.AddHttpClient<IDirectTransport, HttpBasedTransport>(c => c.Timeout = TimeSpan.FromSeconds(60))
+builder.Services.AddHttpClient<IEventTransport, HttpBasedEventTransport>(c => c.Timeout = TimeSpan.FromSeconds(60))
     .AddPolicyHandler(
         HttpPolicyExtensions
             .HandleTransientHttpError()

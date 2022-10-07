@@ -6,7 +6,7 @@ namespace Evento.Controllers;
 
 [ApiController]
 [Route("api/subscriptions")]
-public class SubscriptionsController : ControllerBase
+public sealed class SubscriptionsController : ControllerBase
 {
     private readonly ISubscriptionRepository subscriptionRepository;
 

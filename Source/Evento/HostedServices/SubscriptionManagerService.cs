@@ -1,23 +1,34 @@
+using Evento.Internals;
 using Evento.Services;
 using Medallion.Threading;
+using Prometheus;
 
 namespace Evento.HostedServices;
 
-public class SubscriptionManagerService : BackgroundService
+public sealed class SubscriptionManagerService : BackgroundService
 {
+    private static readonly TimeSpan RetryOnFailureDelay = TimeSpan.FromSeconds(5);
+
     private readonly ILogger<SubscriptionManagerService> logger;
     private readonly ISubscriptionManager subscriptionManager;
     private readonly IDistributedLockProvider distributedLockProvider;
+    private readonly Gauge acquiredLockGauge;
 
     public SubscriptionManagerService(
         ILogger<SubscriptionManagerService> logger,
         ISubscriptionManager subscriptionManager,
-        IDistributedLockProvider distributedLockProvider
+        IDistributedLockProvider distributedLockProvider,
+        IMetricFactory metricFactory
     )
     {
         this.logger = logger;
         this.subscriptionManager = subscriptionManager;
         this.distributedLockProvider = distributedLockProvider;
+        acquiredLockGauge = metricFactory.CreateGauge(
+            "evento_acquired_lock",
+            "Acquired locks by evento",
+            new GaugeConfiguration { LabelNames = new[] { "lock_name" } }
+        );
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -29,6 +40,7 @@ public class SubscriptionManagerService : BackgroundService
             try
             {
                 await using var handle = await distributedLock.AcquireAsync(null, stoppingToken);
+                using var _ = acquiredLockGauge.Labels("subscription-manager").TrackInProgress();
 
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, handle.HandleLostToken);
 
@@ -38,7 +50,7 @@ public class SubscriptionManagerService : BackgroundService
             {
                 logger.LogError(exception, "Unexpected exception");
 
-                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                await Task.Delay(RetryOnFailureDelay.Randomize(), stoppingToken);
             }
         }
     }

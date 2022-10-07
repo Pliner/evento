@@ -2,7 +2,7 @@ using Evento.Repositories.Subscription;
 
 namespace Evento.Services;
 
-public interface IDirectTransport
+public interface IEventTransport
 {
     Task SendAsync(
         Subscription subscription,

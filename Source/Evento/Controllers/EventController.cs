@@ -6,7 +6,7 @@ namespace Evento.Controllers;
 
 [ApiController]
 [Route("api/events")]
-public class EventController : ControllerBase
+public sealed class EventController : ControllerBase
 {
     private readonly IPublishSubscribe publishSubscribe;
 

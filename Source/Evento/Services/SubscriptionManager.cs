@@ -4,16 +4,13 @@ using Prometheus;
 
 namespace Evento.Services;
 
-public interface ISubscriptionManager
-{
-    Task RunAsync(CancellationToken cancellationToken = default);
-}
-
 public sealed class SubscriptionManager : ISubscriptionManager
 {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(5);
+
     private readonly ILogger<SubscriptionManager> logger;
     private readonly ISubscriptionRepository subscriptionRepository;
-    private readonly IDirectTransport transport;
+    private readonly IEventTransport transport;
     private readonly IPublishSubscribe publishSubscribe;
     private readonly Counter failedEventsCounter;
     private readonly Counter totalEventsCounter;
@@ -21,7 +18,7 @@ public sealed class SubscriptionManager : ISubscriptionManager
     public SubscriptionManager(
         ILogger<SubscriptionManager> logger,
         ISubscriptionRepository subscriptionRepository,
-        IDirectTransport transport,
+        IEventTransport transport,
         IPublishSubscribe publishSubscribe,
         IMetricFactory metricsFactory
     )
@@ -69,7 +66,7 @@ public sealed class SubscriptionManager : ISubscriptionManager
                 logger.LogError(exception, "Failed to maintain subscriptions");
             }
 
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            await Task.Delay(PollInterval, cancellationToken);
         }
     }
 

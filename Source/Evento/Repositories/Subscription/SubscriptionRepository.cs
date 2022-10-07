@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Evento.Repositories.Subscription;
 
-public class SubscriptionRepository : ISubscriptionRepository
+public sealed class SubscriptionRepository : ISubscriptionRepository
 {
     private readonly IDbContextFactory<EventoDbContext> dbContextFactory;
 

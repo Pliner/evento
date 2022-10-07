@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.WebUtilities;
 
 namespace Evento.Services;
 
-public sealed class HttpBasedTransport : IDirectTransport
+public sealed class HttpBasedEventTransport : IEventTransport
 {
     private readonly HttpClient httpClient;
 
-    public HttpBasedTransport(HttpClient httpClient) => this.httpClient = httpClient;
+    public HttpBasedEventTransport(HttpClient httpClient) => this.httpClient = httpClient;
 
     public async Task SendAsync(
         Subscription subscription,
