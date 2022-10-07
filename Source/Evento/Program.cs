@@ -6,7 +6,6 @@ using Evento.Repositories.Subscription;
 using Evento.Services;
 using Medallion.Threading;
 using Medallion.Threading.Postgres;
-using Microsoft.Extensions.Logging.Console;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
@@ -21,8 +20,7 @@ builder.Services.AddHealthChecks();
 builder.Services.AddLogging(c =>
 {
     c.SetMinimumLevel(LogLevel.Information)
-        .AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning)
-        .AddFilter("Microsoft.Hosting.Lifetime", LogLevel.Warning)
+        .AddFilter("Microsoft", LogLevel.Warning)
         .AddConsole();
 });
 builder.Services.AddSingleton(s =>
