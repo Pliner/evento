@@ -70,7 +70,7 @@ builder.Services.RegisterEasyNetQ(
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);
     },
     c => c.EnableMicrosoftLogging()
-        .EnableNewtonsoftJson()
+        .EnableSystemTextJson()
         .EnableAlwaysNackWithRequeueConsumerErrorStrategy()
 );
 builder.Services.AddSingleton<IDistributedLockProvider>(c =>
