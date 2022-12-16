@@ -6,9 +6,9 @@ namespace Evento.Services;
 
 public sealed class HttpBasedEventTransport : IEventTransport
 {
-    private readonly HttpClient httpClient;
+    private readonly IHttpClientFactory httpClientFactory;
 
-    public HttpBasedEventTransport(HttpClient httpClient) => this.httpClient = httpClient;
+    public HttpBasedEventTransport(IHttpClientFactory httpClientFactory) => this.httpClientFactory = httpClientFactory;
 
     public async Task SendAsync(
         Subscription subscription,
@@ -17,6 +17,8 @@ public sealed class HttpBasedEventTransport : IEventTransport
         CancellationToken cancellationToken = default
     )
     {
+        using var httpClient = httpClientFactory.CreateClient("events");
+
         using var content = new ReadOnlyMemoryContent(payload);
         content.Headers.ContentType = new MediaTypeHeaderValue(properties.ContentType);
 

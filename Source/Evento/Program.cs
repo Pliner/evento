@@ -12,6 +12,12 @@ using Polly.Extensions.Http;
 using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseDefaultServiceProvider(o =>
+{
+    o.ValidateScopes = true;
+    o.ValidateOnBuild = true;
+});
+
 builder.Configuration.AddEnvironmentVariables();
 builder.Configuration.AddCommandLine(args);
 builder.Services.AddControllers();
@@ -35,7 +41,10 @@ builder.Services.AddSingleton<ISubscriptionRepository, SubscriptionRepository>()
 builder.Services.AddSingleton<IEventTransport, HttpBasedEventTransport>();
 builder.Services.AddSingleton<IPublishSubscribe, RmqBasedPublishSubscribe>();
 builder.Services.AddSingleton<ISubscriptionManager, SubscriptionManager>();
-builder.Services.AddHttpClient<IEventTransport, HttpBasedEventTransport>(c => c.Timeout = TimeSpan.FromSeconds(60))
+builder.Services.AddHttpClient(
+        "events",
+        c => c.Timeout = TimeSpan.FromSeconds(60)
+    )
     .AddPolicyHandler(
         HttpPolicyExtensions
             .HandleTransientHttpError()
