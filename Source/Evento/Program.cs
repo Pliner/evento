@@ -104,4 +104,21 @@ app.UseSwaggerUI(options =>
         options.RoutePrefix = string.Empty;
     }
 );
+SetupThreadPool(32);
 await app.RunAsync();
+
+static void SetupThreadPool(double multiplier)
+{
+    if (multiplier <= 0)
+        return;
+
+    const int maximumThreads = short.MaxValue;
+
+    var minimumThreads = (int)Math.Round(
+        Math.Min(Environment.ProcessorCount * multiplier, maximumThreads),
+        MidpointRounding.AwayFromZero
+    );
+
+    ThreadPool.SetMaxThreads(maximumThreads, maximumThreads);
+    ThreadPool.SetMinThreads(minimumThreads, minimumThreads);
+}
