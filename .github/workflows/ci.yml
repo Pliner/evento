@@ -15,13 +15,13 @@ env:
 jobs:
   test:
     name: Lint & Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
     strategy:
       matrix:
-        dotnet: ['6.0.x']
+        dotnet: ['7.0.x']
       fail-fast: true
     steps:
     - name: Checkout
@@ -41,7 +41,7 @@ jobs:
 
   publish-to-github-docker-registry:
     name: Publish To Github Docker Registry
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     permissions:
