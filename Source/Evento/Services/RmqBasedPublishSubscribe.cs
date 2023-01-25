@@ -166,7 +166,7 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
             var verdict = await eventHandlerDelegate(subscription, eventProperties, payload, cancellationToken);
             if (verdict == EventHandlerResult.Processed) return;
 
-            var nextRetryAttempt = properties.Headers.TryGetValue("Evento-Retry-Attempt", out var retryAttempt)
+            var nextRetryAttempt = properties.Headers != null && properties.Headers.TryGetValue("Evento-Retry-Attempt", out var retryAttempt)
                 ? (int)(retryAttempt ?? 0) + 1
                 : 1;
 
@@ -206,7 +206,7 @@ public sealed class RmqBasedPublishSubscribe : IPublishSubscribe
             AppId = "evento",
         };
         if (retryAttempt != null)
-            messageProperties.Headers.Add("Evento-Retry-Attempt", retryAttempt);
+            messageProperties = messageProperties.SetHeader("Evento-Retry-Attempt", retryAttempt);
         return messageProperties;
     }
 }

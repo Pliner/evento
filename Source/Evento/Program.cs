@@ -79,7 +79,7 @@ builder.Services.RegisterEasyNetQ(
         return c.Resolve<IConnectionStringParser>().Parse(connectionString);
     },
     c => c.EnableMicrosoftLogging()
-        .EnableSystemTextJson()
+        .EnableSystemTextJsonV2()
         .EnableAlwaysNackWithRequeueConsumerErrorStrategy()
 );
 builder.Services.AddSingleton<IDistributedLockProvider>(c =>
